@@ -1,67 +1,64 @@
+// lib/main.dart
 import 'package:flutter/material.dart';
+import 'package:impulse/router.dart';
+import 'package:impulse/core/services/api_client.dart';
 
 void main() {
-  runApp(const MyApp());
+  runApp(const ImpulseApp());
 }
 
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+class ImpulseApp extends StatefulWidget {
+  const ImpulseApp({super.key});
 
-  // This widget is the root of your application.
+  @override
+  State<ImpulseApp> createState() => _ImpulseAppState();
+}
+
+class _ImpulseAppState extends State<ImpulseApp> {
+  String? _telegramInitData;
+
+  @override
+  void initState() {
+    super.initState();
+    _initTelegram();
+  }
+
+  Future<void> _initTelegram() async {
+    try {
+      // Для веб-версии (если нужно)
+      if (isWeb()) {
+        _telegramInitData = await _getTelegramWebAppData();
+      }
+      // Для мобильных версий можно добавить другую логику
+    } catch (e) {
+      debugPrint('Error initializing Telegram: $e');
+    }
+  }
+
+  // Заглушка для веб-версии
+  Future<String?> _getTelegramWebAppData() async {
+    // Здесь должна быть реализация получения данных из Telegram WebApp
+    // В реальном приложении это будет JavaScript-код
+    return null;
+  }
+
+  // Проверка платформы
+  bool isWeb() {
+    return identical(0, 0.0); // Упрощенная проверка для примера
+    // Лучше использовать package:flutter/foundation.dart и kIsWeb
+  }
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Flutter Demo',
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
+      title: 'Impulse',
+      debugShowCheckedModeBanner: false,
+      theme: ThemeData(useMaterial3: true),
+      initialRoute: '/',
+      onGenerateRoute: (settings) => AppRouter.generateRoute(
+        settings,
+        telegramInitData: _telegramInitData,
       ),
-      home: const MyHomePage(title: 'Flutter Demo Home Page'),
-    );
-  }
-}
-
-class MyHomePage extends StatefulWidget {
-  const MyHomePage({super.key, required this.title});
-
-  final String title;
-
-  @override
-  State<MyHomePage> createState() => _MyHomePageState();
-}
-
-class _MyHomePageState extends State<MyHomePage> {
-  int _counter = 0;
-
-  void _incrementCounter() {
-    setState(() {
-      _counter++;
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        title: Text(widget.title),
-      ),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            const Text('You have pushed the button this many times:'),
-            Text(
-              '$_counter',
-              style: Theme.of(context).textTheme.headlineMedium,
-            ),
-          ],
-        ),
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _incrementCounter,
-        tooltip: 'Increment',
-        child: const Icon(Icons.add),
-      ), // This trailing comma makes auto-formatting nicer for build methods.
     );
   }
 }
