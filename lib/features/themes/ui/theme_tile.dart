@@ -1,31 +1,49 @@
-// features/themes/ui/theme_tile.dart
+// lib/features/themes/ui/theme_tile.dart
 import 'package:flutter/material.dart';
-import '../../../data/models/theme_model.dart';
-import '../../domain/theme.dart';
+import 'package:impulse/data/models/theme_model.dart';
 
-// features/themes/ui/theme_tile.dart
 class ThemeTile extends StatelessWidget {
   final ThemeModel theme;
   final VoidCallback onTap;
 
-  const ThemeTile({
-    super.key,
-    required this.theme,
-    required this.onTap,
-  });
+  const ThemeTile({super.key, required this.theme, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      elevation: 2,
-      child: ListTile(
-        onTap: onTap,
-        title: Text(theme.name),
-        subtitle: Text('Вопросов: ${theme.questionCount}'),
-        trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 16),
+    return ListTile(
+      contentPadding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+      leading: Container(
+        width: 48,
+        height: 48,
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+          shape: BoxShape.circle,
+        ),
+        child: Center(
+          child: Text(
+            '${theme.index + 1}',
+            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+              color: Theme.of(context).colorScheme.primary,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ),
       ),
+      title: Text(
+        theme.name,
+        style: Theme.of(
+          context,
+        ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+      ),
+      subtitle: Text(
+        '${theme.questionCount} вопросов',
+        style: Theme.of(context).textTheme.bodySmall,
+      ),
+      trailing: Icon(
+        Icons.chevron_right,
+        color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
+      ),
+      onTap: onTap,
     );
   }
 }
