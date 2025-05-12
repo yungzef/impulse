@@ -292,8 +292,35 @@ class ApiClient {
       throw Exception('Failed to remove from errors: $e');
     }
   }
+
+  // Добавьте в lib/core/services/api_client.dart
+  Future<void> resetProgress() async {
+    try {
+      await _dio.post(
+        '/user/reset',
+        queryParameters: {'telegram_id': userId},
+      );
+    } on DioException catch (e) {
+      throw Exception('Failed to reset progress: ${e.message}');
+    }
+  }
+
+  Future<void> sendFeedback(String feedback, int rating) async {
+    try {
+      await _dio.post(
+        '/feedback',
+        data: {
+          'feedback': feedback,
+          'rating': rating,
+          'telegram_id': userId,
+        },
+      );
+    } on DioException catch (e) {
+      throw Exception('Failed to send feedback: ${e.message}');
+    }
+  }
 }
 
 class AppConfig {
-  static const apiBaseUrl = 'https://c029-146-120-163-81.ngrok-free.app';
+  static const apiBaseUrl = 'http://146.120.163.81:8000';
 }

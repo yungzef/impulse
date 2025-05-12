@@ -1,4 +1,4 @@
-// lib/features/ticket/ui/ticket_page.dart
+// Файл: ticket_page.dart
 import 'package:flutter/material.dart';
 import 'package:impulse/core/services/api_client.dart';
 import 'package:impulse/data/models/question_model.dart';
@@ -51,11 +51,13 @@ class _TicketPageState extends State<TicketPage> {
     try {
       final isCorrect = index == question.correctIndex;
       await _client.trackQuestionAnswer(question.id, isCorrect);
-
     } catch (e) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Error: $e')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Помилка: $e'),
+          backgroundColor: Theme.of(context).colorScheme.error,
+        ),
+      );
     }
   }
 
@@ -68,82 +70,130 @@ class _TicketPageState extends State<TicketPage> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            question.isFavorite
-                ? 'Добавлено в избранное'
-                : 'Удалено из избранного',
+              question.isFavorite ? 'Додано до обраного' : 'Видалено з обраного'),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
           ),
         ),
       );
     } catch (e) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Ошибка: $e')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Помилка: $e'),
+          backgroundColor: Theme.of(context).colorScheme.error,
+        ),
+      );
     }
   }
 
   Widget _buildQuestionNavigation() {
     if (_questions == null) return const SizedBox();
 
-    return SizedBox(
-      height: 50,
-      child: ListView.builder(
-        scrollDirection: Axis.horizontal,
-        itemCount: _questions!.length,
-        itemBuilder: (context, index) {
-          final question = _questions![index];
-          bool isAnswered = question.wasAnsweredCorrectly != null;
-          bool isCorrect = question.wasAnsweredCorrectly == true;
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
 
-          return GestureDetector(
-            onTap: () {
-              setState(() {
-                _currentIndex = index;
-                _selectedAnswer = null;
-              });
-            },
-            child: Container(
-              width: 40,
-              height: 40,
-              margin: const EdgeInsets.all(4),
-              decoration: BoxDecoration(
-                color:
-                    _currentIndex == index
-                        ? Colors.blue
+    return Padding(
+      padding: const EdgeInsets.all(10.0),
+      child: SizedBox(
+        height: 48,
+        child: ListView.builder(
+          scrollDirection: Axis.horizontal,
+          itemCount: _questions!.length,
+          itemBuilder: (context, index) {
+            final question = _questions![index];
+            final isAnswered = question.wasAnsweredCorrectly != null;
+            final isCorrect = question.wasAnsweredCorrectly == true;
+            final isCurrent = _currentIndex == index;
+
+            return GestureDetector(
+              onTap: () {
+                setState(() {
+                  _currentIndex = index;
+                  _selectedAnswer = null;
+                });
+              },
+              child: AnimatedScale(
+                duration: const Duration(milliseconds: 300),
+                curve: Curves.easeOutBack,
+                scale: isCurrent ? 1.0 : 0.8,
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  width: 48,
+                  height: 48,
+                  margin: const EdgeInsets.symmetric(horizontal: 5),
+                  decoration: BoxDecoration(
+                    color: isCurrent
+                        ? colorScheme.primary
                         : isAnswered
                         ? isCorrect
-                            ? Colors.green
-                            : Colors.red
-                        : Colors.grey[300],
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Center(
-                child: Text(
-                  '${index + 1}',
-                  style: TextStyle(
-                    color: _currentIndex == index ? Colors.white : Colors.black,
+                        ? colorScheme.primary.withOpacity(0.8)
+                        : colorScheme.error.withOpacity(0.8)
+                        : colorScheme.surfaceVariant,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: isCurrent
+                          ? colorScheme.onPrimary.withOpacity(0.9)
+                          : Colors.transparent,
+                      width: 2,
+                    ),
+                  ),
+                  child: Center(
+                    child: AnimatedDefaultTextStyle(
+                      duration: const Duration(milliseconds: 200),
+                      style: TextStyle(
+                        color: isCurrent
+                            ? colorScheme.onPrimary
+                            : colorScheme.onBackground,
+                        fontWeight: FontWeight.bold,
+                        fontSize: isCurrent ? 18 : 16,
+                      ),
+                      child: Text('${index + 1}'),
+                    ),
                   ),
                 ),
               ),
-            ),
-          );
-        },
+            );
+          },
+        ),
       ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
     return Scaffold(
-      appBar: AppBar(title: Text(widget.title)),
+      backgroundColor: colorScheme.background,
+      appBar: AppBar(
+        title: Text(
+          widget.title,
+          style: TextStyle(color: colorScheme.onBackground),
+        ),
+        backgroundColor: colorScheme.surface,
+      ),
       body: FutureBuilder<List<QuestionModel>>(
         future: _questionsFuture,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
+            return Center(
+                child: CircularProgressIndicator(color: colorScheme.primary));
           } else if (snapshot.hasError) {
-            return Center(child: Text('Ошибка: ${snapshot.error}'));
+            return Center(
+              child: Text(
+                'Помилка: ${snapshot.error}',
+                style: TextStyle(color: colorScheme.onBackground),
+              ),
+            );
           } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-            return const Center(child: Text('Нет вопросов'));
+            return Center(
+              child: Text(
+                'Немає питань',
+                style: TextStyle(color: colorScheme.onBackground),
+              ),
+            );
           }
 
           _questions = snapshot.data!;
@@ -153,10 +203,19 @@ class _TicketPageState extends State<TicketPage> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Text('Вы ответили на все вопросы!'),
+                  Text(
+                    'Ви відповіли на всі питання!',
+                    style: TextStyle(
+                        color: colorScheme.onBackground, fontSize: 18),
+                  ),
+                  const SizedBox(height: 24),
                   ElevatedButton(
                     onPressed: () => Navigator.pop(context),
-                    child: const Text('Вернуться назад'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: colorScheme.primary,
+                      foregroundColor: colorScheme.onPrimary,
+                    ),
+                    child: const Text('Повернутись назад'),
                   ),
                 ],
               ),
@@ -173,11 +232,19 @@ class _TicketPageState extends State<TicketPage> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
+                      LinearProgressIndicator(
+                        value: (_currentIndex + 1) / _questions!.length,
+                        backgroundColor: colorScheme.surfaceVariant,
+                        color: colorScheme.primary,
+                        minHeight: 4,
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                      const SizedBox(height: 16),
                       if (question.image != null && question.image!.isNotEmpty)
                         Padding(
                           padding: const EdgeInsets.only(bottom: 16),
                           child: ClipRRect(
-                            borderRadius: BorderRadius.circular(8),
+                            borderRadius: BorderRadius.circular(16),
                             child: Image.network(
                               '${AppConfig.apiBaseUrl}/image?path=${question.image!}',
                               fit: BoxFit.cover,
@@ -185,18 +252,17 @@ class _TicketPageState extends State<TicketPage> {
                           ),
                         ),
                       Text(
-                        'Вопрос ${_currentIndex + 1} из ${_questions?.length}',
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Theme.of(
-                            context,
-                          ).colorScheme.onSurface.withOpacity(0.6),
+                        'Питання ${_currentIndex + 1} з ${_questions?.length}',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: colorScheme.onSurface.withOpacity(0.7),
                         ),
                       ),
                       const SizedBox(height: 8),
                       Text(
                         question.question,
-                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        style: theme.textTheme.titleLarge?.copyWith(
                           fontWeight: FontWeight.w600,
+                          color: colorScheme.onBackground,
                         ),
                       ),
                       const SizedBox(height: 24),
@@ -230,9 +296,7 @@ class _TicketPageState extends State<TicketPage> {
                           child: OutlinedButton(
                             style: OutlinedButton.styleFrom(
                               side: BorderSide(
-                                color:
-                                    borderColor ??
-                                    Theme.of(context).colorScheme.outline,
+                                color: borderColor ?? colorScheme.outline,
                               ),
                               backgroundColor: backgroundColor,
                               padding: const EdgeInsets.symmetric(
@@ -241,17 +305,16 @@ class _TicketPageState extends State<TicketPage> {
                               ),
                               alignment: Alignment.centerLeft,
                             ),
-                            onPressed:
-                                _selectedAnswer == null
-                                    ? () => _handleAnswer(index, question)
-                                    : null,
+                            onPressed: _selectedAnswer == null
+                                ? () => _handleAnswer(index, question)
+                                : null,
                             child: Row(
                               children: [
                                 Expanded(
                                   child: Text(
                                     answer,
-                                    style:
-                                        Theme.of(context).textTheme.bodyLarge,
+                                    style: theme.textTheme.bodyLarge?.copyWith(
+                                        color: colorScheme.onBackground),
                                   ),
                                 ),
                                 if (icon != null)
@@ -264,29 +327,28 @@ class _TicketPageState extends State<TicketPage> {
                       if (_selectedAnswer != null) ...[
                         const SizedBox(height: 24),
                         Card(
-                          color: Theme.of(
-                            context,
-                          ).colorScheme.primary.withOpacity(0.1),
+                          color: colorScheme.surfaceVariant,
                           margin: EdgeInsets.zero,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
                           child: Padding(
                             padding: const EdgeInsets.all(16),
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.stretch,
                               children: [
                                 Text(
-                                  'Объяснение:',
-                                  style: Theme.of(
-                                    context,
-                                  ).textTheme.bodySmall?.copyWith(
-                                    color:
-                                        Theme.of(context).colorScheme.primary,
+                                  'Пояснення:',
+                                  style: theme.textTheme.bodySmall?.copyWith(
+                                    color: colorScheme.primary,
                                     fontWeight: FontWeight.bold,
                                   ),
                                 ),
                                 const SizedBox(height: 8),
                                 Text(
                                   question.explanation,
-                                  style: Theme.of(context).textTheme.bodyMedium,
+                                  style: theme.textTheme.bodyMedium?.copyWith(
+                                      color: colorScheme.onBackground),
                                 ),
                               ],
                             ),
@@ -298,7 +360,14 @@ class _TicketPageState extends State<TicketPage> {
                           children: [
                             ElevatedButton(
                               onPressed: _nextQuestion,
-                              child: const Text('Следующий вопрос'),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: colorScheme.primary,
+                                foregroundColor: colorScheme.onPrimary,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(24),
+                                ),
+                              ),
+                              child: const Text('Наступне питання'),
                             ),
                             IconButton(
                               icon: Icon(

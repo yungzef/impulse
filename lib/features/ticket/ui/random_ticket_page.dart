@@ -1,3 +1,4 @@
+// Файл: random_ticket_page.dart
 import 'package:flutter/material.dart';
 import 'package:impulse/core/services/api_client.dart';
 import 'package:impulse/data/models/question_model.dart';
@@ -6,7 +7,11 @@ class RandomTicketPage extends StatefulWidget {
   final String? telegramUserId;
   final Function onProgressUpdated;
 
-  const RandomTicketPage({super.key, required this.telegramUserId, required this.onProgressUpdated});
+  const RandomTicketPage({
+    super.key,
+    required this.telegramUserId,
+    required this.onProgressUpdated,
+  });
 
   @override
   State<RandomTicketPage> createState() => _RandomTicketPageState();
@@ -37,14 +42,13 @@ class _RandomTicketPageState extends State<RandomTicketPage> {
     try {
       final isCorrect = index == question.correctIndex;
       await _client.trackQuestionAnswer(question.id, isCorrect);
-
-      // Обновляем прогресс
-      if (widget.onProgressUpdated != null) {
-        widget.onProgressUpdated!();
-      }
+      widget.onProgressUpdated();
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: $e')),
+        SnackBar(
+          content: Text('Помилка: $e'),
+          backgroundColor: Theme.of(context).colorScheme.error,
+        ),
       );
     }
   }
@@ -64,15 +68,19 @@ class _RandomTicketPageState extends State<RandomTicketPage> {
       });
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(question.isFavorite
-              ? 'Добавлено в избранное'
-              : 'Удалено из избранного'),
+          content: Text(
+              question.isFavorite ? 'Додано до обраного' : 'Видалено з обраного'),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
         ),
       );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Ошибка: $e'),
+          content: Text('Помилка: $e'),
+          backgroundColor: Theme.of(context).colorScheme.error,
         ),
       );
     }
@@ -80,14 +88,22 @@ class _RandomTicketPageState extends State<RandomTicketPage> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
     return Scaffold(
+      backgroundColor: colorScheme.background,
       appBar: AppBar(
-        title: const Text('Случайный билет'),
+        title: Text(
+          'Випадковий білет',
+          style: TextStyle(color: colorScheme.onBackground),
+        ),
+        backgroundColor: colorScheme.surface,
         actions: [
           IconButton(
-            icon: const Icon(Icons.refresh),
+            icon: Icon(Icons.refresh, color: colorScheme.onSurface),
             onPressed: _loadQuestions,
-            tooltip: 'Обновить вопросы',
+            tooltip: 'Оновити питання',
           ),
         ],
       ),
@@ -96,23 +112,29 @@ class _RandomTicketPageState extends State<RandomTicketPage> {
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return Center(
-              child: CircularProgressIndicator(),
-            );
+                child: CircularProgressIndicator(color: colorScheme.primary));
           } else if (snapshot.hasError) {
             return Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.error_outline, size: 48, color: Colors.red),
-                  SizedBox(height: 16),
+                  Icon(Icons.error_outline,
+                      size: 48, color: colorScheme.error),
+                  const SizedBox(height: 16),
                   Text(
-                    'Ошибка загрузки',
-                    style: Theme.of(context).textTheme.titleLarge,
+                    'Помилка завантаження',
+                    style: theme.textTheme.titleLarge?.copyWith(
+                      color: colorScheme.onBackground,
+                    ),
                   ),
-                  SizedBox(height: 8),
+                  const SizedBox(height: 8),
                   ElevatedButton(
                     onPressed: _loadQuestions,
-                    child: Text('Попробовать снова'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: colorScheme.primary,
+                      foregroundColor: colorScheme.onPrimary,
+                    ),
+                    child: const Text('Спробувати знову'),
                   ),
                 ],
               ),
@@ -122,16 +144,21 @@ class _RandomTicketPageState extends State<RandomTicketPage> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.help_outline, size: 48, color: Colors.grey),
-                  SizedBox(height: 16),
+                  Icon(Icons.help_outline,
+                      size: 48, color: colorScheme.onSurface.withOpacity(0.5)),
+                  const SizedBox(height: 16),
                   Text(
-                    'Нет вопросов',
-                    style: Theme.of(context).textTheme.titleLarge,
+                    'Немає питань',
+                    style: theme.textTheme.titleLarge?.copyWith(
+                      color: colorScheme.onBackground,
+                    ),
                   ),
-                  SizedBox(height: 8),
+                  const SizedBox(height: 8),
                   Text(
-                    'Попробуйте обновить список',
-                    style: Theme.of(context).textTheme.bodyMedium,
+                    'Спробуйте оновити список',
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: colorScheme.onSurface.withOpacity(0.7),
+                    ),
                   ),
                 ],
               ),
@@ -144,17 +171,24 @@ class _RandomTicketPageState extends State<RandomTicketPage> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.check_circle, size: 48, color: Colors.green),
-                  SizedBox(height: 16),
+                  Icon(Icons.check_circle,
+                      size: 48, color: colorScheme.primary),
+                  const SizedBox(height: 16),
                   Text(
-                    'Вы ответили на все вопросы!',
-                    style: Theme.of(context).textTheme.titleLarge,
+                    'Ви відповіли на всі питання!',
+                    style: theme.textTheme.titleLarge?.copyWith(
+                      color: colorScheme.onBackground,
+                    ),
                   ),
-                  SizedBox(height: 24),
+                  const SizedBox(height: 24),
                   ElevatedButton.icon(
-                    icon: Icon(Icons.refresh),
-                    label: Text('Начать заново'),
+                    icon: const Icon(Icons.refresh),
+                    label: const Text('Почати знову'),
                     onPressed: _loadQuestions,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: colorScheme.primary,
+                      foregroundColor: colorScheme.onPrimary,
+                    ),
                   ),
                 ],
               ),
@@ -163,15 +197,23 @@ class _RandomTicketPageState extends State<RandomTicketPage> {
 
           final question = questions[_currentIndex];
           return SingleChildScrollView(
-            padding: EdgeInsets.all(16),
+            padding: const EdgeInsets.all(16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
+                LinearProgressIndicator(
+                  value: (_currentIndex + 1) / questions.length,
+                  backgroundColor: colorScheme.surfaceVariant,
+                  color: colorScheme.primary,
+                  minHeight: 4,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+                const SizedBox(height: 16),
                 if (question.image != null && question.image!.isNotEmpty)
                   Padding(
-                    padding: EdgeInsets.only(bottom: 16),
+                    padding: const EdgeInsets.only(bottom: 16),
                     child: ClipRRect(
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: BorderRadius.circular(16),
                       child: Image.network(
                         '${AppConfig.apiBaseUrl}/image?path=${question.image!}',
                         fit: BoxFit.cover,
@@ -179,19 +221,20 @@ class _RandomTicketPageState extends State<RandomTicketPage> {
                     ),
                   ),
                 Text(
-                  'Вопрос ${_currentIndex + 1} из ${questions.length}',
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                  'Питання ${_currentIndex + 1} з ${questions.length}',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: colorScheme.onSurface.withOpacity(0.7),
                   ),
                 ),
-                SizedBox(height: 8),
+                const SizedBox(height: 8),
                 Text(
                   question.question,
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                  style: theme.textTheme.titleLarge?.copyWith(
                     fontWeight: FontWeight.w600,
+                    color: colorScheme.onBackground,
                   ),
                 ),
-                SizedBox(height: 24),
+                const SizedBox(height: 24),
                 ...question.answers.asMap().entries.map((entry) {
                   final index = entry.key;
                   final answer = entry.value;
@@ -218,14 +261,15 @@ class _RandomTicketPageState extends State<RandomTicketPage> {
                   }
 
                   return Padding(
-                    padding: EdgeInsets.only(bottom: 12),
+                    padding: const EdgeInsets.only(bottom: 12),
                     child: OutlinedButton(
                       style: OutlinedButton.styleFrom(
                         side: BorderSide(
-                          color: borderColor ?? Theme.of(context).colorScheme.outline,
+                          color: borderColor ?? colorScheme.outline,
                         ),
                         backgroundColor: backgroundColor,
-                        padding: EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+                        padding: const EdgeInsets.symmetric(
+                            vertical: 16, horizontal: 16),
                         alignment: Alignment.centerLeft,
                       ),
                       onPressed: _selectedAnswer == null
@@ -236,7 +280,9 @@ class _RandomTicketPageState extends State<RandomTicketPage> {
                           Expanded(
                             child: Text(
                               answer,
-                              style: Theme.of(context).textTheme.bodyLarge,
+                              style: theme.textTheme.bodyLarge?.copyWith(
+                                color: colorScheme.onBackground,
+                              ),
                             ),
                           ),
                           if (icon != null)
@@ -247,42 +293,56 @@ class _RandomTicketPageState extends State<RandomTicketPage> {
                   );
                 }).toList(),
                 if (_selectedAnswer != null) ...[
-                  SizedBox(height: 24),
+                  const SizedBox(height: 24),
                   Card(
-                    color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                    color: colorScheme.surfaceVariant,
                     margin: EdgeInsets.zero,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
                     child: Padding(
-                      padding: EdgeInsets.all(16),
+                      padding: const EdgeInsets.all(16),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
                           Text(
-                            'Объяснение:',
-                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: Theme.of(context).colorScheme.primary,
+                            'Пояснення:',
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: colorScheme.primary,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
-                          SizedBox(height: 8),
+                          const SizedBox(height: 8),
                           Text(
                             question.explanation,
-                            style: Theme.of(context).textTheme.bodyMedium,
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              color: colorScheme.onBackground,
+                            ),
                           ),
                         ],
                       ),
                     ),
                   ),
-                  SizedBox(height: 16),
+                  const SizedBox(height: 16),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     children: [
                       ElevatedButton(
                         onPressed: _nextQuestion,
-                        child: Text('Следующий вопрос'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: colorScheme.primary,
+                          foregroundColor: colorScheme.onPrimary,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(24),
+                          ),
+                        ),
+                        child: const Text('Наступне питання'),
                       ),
                       IconButton(
                         icon: Icon(
-                          question.isFavorite ? Icons.star : Icons.star_border,
+                          question.isFavorite
+                              ? Icons.star
+                              : Icons.star_border,
                           color: Colors.amber,
                         ),
                         onPressed: () => _toggleFavorite(question),

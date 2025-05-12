@@ -25,15 +25,13 @@ class _ThemeListPageState extends State<ThemeListPage> {
     super.initState();
     final apiClient = ApiClient(userId: widget.telegramUserId);
     _repository = ThemeRepository(apiClient: apiClient);
-    _themesFuture = _loadThemesWithProgress(); // Инициализируем сразу
+    _themesFuture = _loadThemesWithProgress();
   }
 
   Future<List<ThemeModel>> _loadThemesWithProgress() async {
     try {
-      // Загружаем темы
       var themes = await _repository.loadThemes();
 
-      // Загружаем прогресс для каждой темы
       List<ThemeModel> updatedThemes = [];
       for (var theme in themes) {
         final progress = await _repository.loadThemeProgress(theme.index);
@@ -65,7 +63,7 @@ class _ThemeListPageState extends State<ThemeListPage> {
     } catch (e) {
       setState(() => _isLoading = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Ошибка обновления: $e')),
+        SnackBar(content: Text('Помилка оновлення: $e')),
       );
     }
   }
@@ -73,8 +71,11 @@ class _ThemeListPageState extends State<ThemeListPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Theme
+          .of(context)
+          .scaffoldBackgroundColor,
       appBar: AppBar(
-        title: const Text('Темы'),
+        title: const Text('Теми'),
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
@@ -94,16 +95,21 @@ class _ThemeListPageState extends State<ThemeListPage> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Icon(Icons.error_outline, size: 48, color: Colors.red),
+                  Icon(Icons.error_outline, size: 48, color: Theme
+                      .of(context)
+                      .indicatorColor),
                   const SizedBox(height: 16),
                   Text(
-                    'Ошибка загрузки тем',
-                    style: Theme.of(context).textTheme.titleLarge,
+                    'Помилка завантаження тем',
+                    style: Theme
+                        .of(context)
+                        .textTheme
+                        .titleLarge,
                   ),
                   const SizedBox(height: 8),
                   ElevatedButton(
                     onPressed: _refreshThemes,
-                    child: const Text('Попробовать снова'),
+                    child: const Text('Спробувати знову'),
                   ),
                 ],
               ),
@@ -113,16 +119,21 @@ class _ThemeListPageState extends State<ThemeListPage> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Icon(Icons.book, size: 48, color: Colors.grey),
+                  Icon(Icons.book, size: 48, color: Theme
+                      .of(context)
+                      .disabledColor),
                   const SizedBox(height: 16),
                   Text(
-                    'Темы не найдены',
-                    style: Theme.of(context).textTheme.titleLarge,
+                    'Теми не знайдені',
+                    style: Theme
+                        .of(context)
+                        .textTheme
+                        .titleLarge,
                   ),
                   const SizedBox(height: 8),
                   ElevatedButton(
                     onPressed: _refreshThemes,
-                    child: const Text('Обновить'),
+                    child: const Text('Оновити'),
                   ),
                 ],
               ),
@@ -135,7 +146,7 @@ class _ThemeListPageState extends State<ThemeListPage> {
             child: ListView.separated(
               padding: const EdgeInsets.symmetric(vertical: 16),
               itemCount: themes.length,
-              separatorBuilder: (context, index) => const Divider(height: 1),
+              separatorBuilder: (context, index) => const SizedBox(height: 8),
               itemBuilder: (context, index) {
                 final theme = themes[index];
                 return ThemeTile(
@@ -144,12 +155,14 @@ class _ThemeListPageState extends State<ThemeListPage> {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => TicketPage(
-                          title: theme.name,
-                          loader: (client) => client.getThemeQuestions(theme.index),
-                          telegramUserId: widget.telegramUserId,
-                          startFromIndex: theme.lastAnsweredIndex,
-                        ),
+                        builder: (context) =>
+                            TicketPage(
+                              title: theme.name,
+                              loader: (client) =>
+                                  client.getThemeQuestions(theme.index),
+                              telegramUserId: widget.telegramUserId,
+                              startFromIndex: theme.lastAnsweredIndex,
+                            ),
                       ),
                     );
                   },

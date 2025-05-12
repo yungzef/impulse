@@ -1,4 +1,4 @@
-// lib/features/ticket/ui/errors_ticket_page.dart
+// Файл: errors_ticket_page.dart
 import 'package:flutter/material.dart';
 import 'package:impulse/core/services/api_client.dart';
 import 'package:impulse/data/models/question_model.dart';
@@ -7,7 +7,11 @@ class ErrorsTicketPage extends StatefulWidget {
   final String? userId;
   final Function onProgressUpdated;
 
-  const ErrorsTicketPage({super.key, required this.userId, required this.onProgressUpdated});
+  const ErrorsTicketPage({
+    super.key,
+    required this.userId,
+    required this.onProgressUpdated,
+  });
 
   @override
   State<ErrorsTicketPage> createState() => _ErrorsTicketPageState();
@@ -46,13 +50,15 @@ class _ErrorsTicketPageState extends State<ErrorsTicketPage> {
       final isCorrect = index == question.correctIndex;
       await _client.trackQuestionAnswer(question.id, isCorrect);
 
-      // Обновляем прогресс
       if (widget.onProgressUpdated != null) {
         widget.onProgressUpdated!();
       }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: $e')),
+        SnackBar(
+          content: Text('Помилка: $e'),
+          backgroundColor: Theme.of(context).colorScheme.error,
+        ),
       );
     }
   }
@@ -65,15 +71,19 @@ class _ErrorsTicketPageState extends State<ErrorsTicketPage> {
       });
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(question.isFavorite
-              ? 'Добавлено в избранное'
-              : 'Удалено из избранного'),
+          content: Text(
+              question.isFavorite ? 'Додано до обраного' : 'Видалено з обраного'),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
         ),
       );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Ошибка: $e'),
+          content: Text('Помилка: $e'),
+          backgroundColor: Theme.of(context).colorScheme.error,
         ),
       );
     }
@@ -81,190 +91,324 @@ class _ErrorsTicketPageState extends State<ErrorsTicketPage> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
     return Scaffold(
+      backgroundColor: colorScheme.background,
       appBar: AppBar(
-        title: const Text('Ошибки'),
+        title: const Text('Помилки'),
+        backgroundColor: colorScheme.surface,
+        elevation: 0,
+        centerTitle: true,
         actions: [
           IconButton(
-            icon: const Icon(Icons.refresh),
+            icon: Icon(Icons.refresh, color: colorScheme.primary),
             onPressed: _loadQuestions,
           ),
         ],
       ),
-      body: FutureBuilder<List<QuestionModel>>(
-        future: _questionsFuture,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              colorScheme.surface,
+              colorScheme.background,
+            ],
+          ),
+        ),
+        child: FutureBuilder<List<QuestionModel>>(
+          future: _questionsFuture,
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return Center(
+                  child: CircularProgressIndicator(color: colorScheme.primary));
+            }
 
-          if (snapshot.hasError) {
-            return Center(child: Text('Ошибка: ${snapshot.error}'));
-          }
-
-          final questions = snapshot.data ?? [];
-
-          if (questions.isEmpty) {
-            return const Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text('Нет вопросов с ошибками'),
-                  SizedBox(height: 16),
-                  Text('Ответьте неправильно на вопросы, и они появятся здесь'),
-                ],
-              ),
-            );
-          }
-
-          if (_currentIndex >= questions.length) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Text('Вы ответили на все вопросы!'),
-                  ElevatedButton(
-                    onPressed: _loadQuestions,
-                    child: const Text('Начать заново'),
-                  ),
-                ],
-              ),
-            );
-          }
-
-          final question = questions[_currentIndex];
-          return SingleChildScrollView(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                if (question.image != null && question.image!.isNotEmpty)
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 16),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(8),
-                      child: Image.network(
-                        '${AppConfig.apiBaseUrl}/image?path=${question.image!}',
-                        fit: BoxFit.cover,
+            if (snapshot.hasError) {
+              return Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.error_outline,
+                        size: 48, color: colorScheme.error),
+                    const SizedBox(height: 16),
+                    Text(
+                      'Помилка завантаження',
+                      style: TextStyle(
+                        color: colorScheme.onBackground,
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
-                  ),
-                Text(
-                  'Вопрос ${_currentIndex + 1} из ${questions.length}',
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  question.question,
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(height: 24),
-                ...question.answers.asMap().entries.map((entry) {
-                  final index = entry.key;
-                  final answer = entry.value;
-                  final isCorrect = index == question.correctIndex;
-                  final isSelected = _selectedAnswer == index;
-
-                  Color? borderColor;
-                  Color? backgroundColor;
-                  IconData? icon;
-                  Color? iconColor;
-
-                  if (_selectedAnswer != null) {
-                    if (isCorrect) {
-                      borderColor = Colors.green;
-                      backgroundColor = Colors.green.withOpacity(0.1);
-                      icon = Icons.check;
-                      iconColor = Colors.green;
-                    } else if (isSelected) {
-                      borderColor = Colors.red;
-                      backgroundColor = Colors.red.withOpacity(0.1);
-                      icon = Icons.close;
-                      iconColor = Colors.red;
-                    }
-                  }
-
-                  return Padding(
-                    padding: const EdgeInsets.only(bottom: 12),
-                    child: OutlinedButton(
-                      style: OutlinedButton.styleFrom(
-                        side: BorderSide(
-                          color: borderColor ?? Theme.of(context).colorScheme.outline,
+                    const SizedBox(height: 8),
+                    ElevatedButton(
+                      onPressed: _loadQuestions,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: colorScheme.primary,
+                        foregroundColor: colorScheme.onPrimary,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(24),
                         ),
-                        backgroundColor: backgroundColor,
-                        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
-                        alignment: Alignment.centerLeft,
                       ),
-                      onPressed: _selectedAnswer == null
-                          ? () => _handleAnswer(index, question)
-                          : null,
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              answer,
-                              style: Theme.of(context).textTheme.bodyLarge,
-                            ),
+                      child: const Text('Спробувати знову'),
+                    ),
+                  ],
+                ),
+              );
+            }
+
+            final questions = snapshot.data ?? [];
+
+            if (questions.isEmpty) {
+              return Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.help_outline,
+                        size: 48, color: colorScheme.primary),
+                    const SizedBox(height: 16),
+                    Text(
+                      'Немає питань з помилками',
+                      style: TextStyle(
+                        color: colorScheme.onBackground,
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Дайте неправильні відповіді на питання,\nі вони з\'являться тут',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: colorScheme.onSurface.withOpacity(0.7),
+                        fontSize: 14,
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }
+
+            if (_currentIndex >= questions.length) {
+              return Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.check_circle,
+                        size: 48, color: colorScheme.primary),
+                    const SizedBox(height: 16),
+                    Text(
+                      'Ви відповіли на всі питання!',
+                      style: TextStyle(
+                        color: colorScheme.onBackground,
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    ElevatedButton(
+                      onPressed: _loadQuestions,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: colorScheme.primary,
+                        foregroundColor: colorScheme.onPrimary,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(24),
+                        ),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 24, vertical: 12),
+                      ),
+                      child: const Text('Почати спочатку'),
+                    ),
+                  ],
+                ),
+              );
+            }
+
+            final question = questions[_currentIndex];
+            return SingleChildScrollView(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  LinearProgressIndicator(
+                    value: (_currentIndex + 1) / questions.length,
+                    backgroundColor: colorScheme.surfaceVariant,
+                    color: colorScheme.primary,
+                    minHeight: 4,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                  const SizedBox(height: 16),
+                  if (question.image != null && question.image!.isNotEmpty)
+                    Container(
+                      margin: const EdgeInsets.only(bottom: 16),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.3),
+                            blurRadius: 10,
+                            offset: const Offset(0, 4),
                           ),
-                          if (icon != null)
-                            Icon(icon, size: 20, color: iconColor),
                         ],
                       ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(16),
+                        child: Image.network(
+                          '${AppConfig.apiBaseUrl}/image?path=${question.image!}',
+                          fit: BoxFit.cover,
+                          width: double.infinity,
+                        ),
+                      ),
                     ),
-                  );
-                }).toList(),
-                if (_selectedAnswer != null) ...[
+                  Text(
+                    'Питання ${_currentIndex + 1} з ${questions.length}',
+                    style: TextStyle(
+                      color: colorScheme.primary,
+                      fontSize: 14,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    question.question,
+                    style: TextStyle(
+                      color: colorScheme.onBackground,
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                   const SizedBox(height: 24),
-                  Card(
-                    color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
-                    margin: EdgeInsets.zero,
-                    child: Padding(
+                  ...question.answers.asMap().entries.map((entry) {
+                    final index = entry.key;
+                    final answer = entry.value;
+                    final isCorrect = index == question.correctIndex;
+                    final isSelected = _selectedAnswer == index;
+
+                    Color borderColor = colorScheme.outline;
+                    Color backgroundColor = Colors.transparent;
+                    IconData? icon;
+                    Color iconColor = Colors.transparent;
+
+                    if (_selectedAnswer != null) {
+                      if (isCorrect) {
+                        borderColor = Colors.green;
+                        backgroundColor = Colors.green.withOpacity(0.1);
+                        icon = Icons.check;
+                        iconColor = Colors.green;
+                      } else if (isSelected) {
+                        borderColor = Colors.red;
+                        backgroundColor = Colors.red.withOpacity(0.1);
+                        icon = Icons.close;
+                        iconColor = Colors.red;
+                      }
+                    }
+
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: OutlinedButton(
+                        style: OutlinedButton.styleFrom(
+                          side: BorderSide(
+                            color: borderColor,
+                            width: 2,
+                          ),
+                          backgroundColor: backgroundColor,
+                          padding: const EdgeInsets.symmetric(
+                            vertical: 16,
+                            horizontal: 16,
+                          ),
+                          alignment: Alignment.centerLeft,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        onPressed: _selectedAnswer == null
+                            ? () => _handleAnswer(index, question)
+                            : null,
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                answer,
+                                style: TextStyle(
+                                  color: colorScheme.onBackground,
+                                  fontSize: 16,
+                                ),
+                              ),
+                            ),
+                            if (icon != null)
+                              Icon(icon, size: 20, color: iconColor),
+                          ],
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                  if (_selectedAnswer != null) ...[
+                    const SizedBox(height: 24),
+                    Container(
                       padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: colorScheme.surfaceVariant,
+                        borderRadius: BorderRadius.circular(16),
+                      ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
                           Text(
-                            'Объяснение:',
-                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: Theme.of(context).colorScheme.primary,
+                            'Пояснення:',
+                            style: TextStyle(
+                              color: colorScheme.primary,
+                              fontSize: 14,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
                           const SizedBox(height: 8),
                           Text(
                             question.explanation,
-                            style: Theme.of(context).textTheme.bodyMedium,
+                            style: TextStyle(
+                              color: colorScheme.onBackground,
+                              fontSize: 16,
+                            ),
                           ),
                         ],
                       ),
                     ),
-                  ),
-                  const SizedBox(height: 16),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: [
-                      ElevatedButton(
-                        onPressed: _nextQuestion,
-                        child: const Text('Следующий вопрос'),
-                      ),
-                      IconButton(
-                        icon: Icon(
-                          question.isFavorite ? Icons.star : Icons.star_border,
-                          color: Colors.amber,
+                    const SizedBox(height: 16),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        ElevatedButton(
+                          onPressed: _nextQuestion,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: colorScheme.primary,
+                            foregroundColor: colorScheme.onPrimary,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(24),
+                            ),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 24, vertical: 12),
+                          ),
+                          child: const Text('Наступне питання'),
                         ),
-                        onPressed: () => _toggleFavorite(question),
-                      ),
-                    ],
-                  ),
+                        IconButton(
+                          icon: Icon(
+                            question.isFavorite
+                                ? Icons.star
+                                : Icons.star_border,
+                            color: Colors.amber,
+                            size: 32,
+                          ),
+                          onPressed: () => _toggleFavorite(question),
+                        ),
+                      ],
+                    ),
+                  ],
                 ],
-              ],
-            ),
-          );
-        },
+              ),
+            );
+          },
+        ),
       ),
     );
   }

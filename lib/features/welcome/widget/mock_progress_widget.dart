@@ -1,52 +1,42 @@
 // lib/features/home/widgets/progress_widget.dart
+import 'dart:math';
+
 import 'package:flutter/material.dart';
-import 'package:impulse/core/services/api_client.dart';
 
 class ProgressWidget extends StatefulWidget {
-  final String? userId;
-
-  const ProgressWidget({super.key, required this.userId});
+  const ProgressWidget({super.key});
 
   @override
   State<ProgressWidget> createState() => _ProgressWidgetState();
 }
 
 class _ProgressWidgetState extends State<ProgressWidget> {
-  final _client = ApiClient();
-  Map<String, dynamic> _progress = {
-    'total': 0,
-    'correct': 0,
-    'wrong': 0,
-    'accuracy': 0.0,
-  };
+  late Map<String, dynamic> _progress;
   bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    _loadProgress();
+    _generateRandomProgress();
   }
 
-  Future<void> _loadProgress() async {
-    try {
-      final progress = await _client.getUserProgress();
-      if (mounted) {
-        setState(() {
-          _progress = progress;
-          _isLoading = false;
-        });
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() => _isLoading = false);
-      }
-      debugPrint('Помилка завантаження прогресу: $e');
-    }
+  void _generateRandomProgress() {
+    final random = Random();
+    setState(() {
+      _progress = {
+        'total': random.nextInt(200) + 50,  // 50-250 questions
+        'correct': random.nextInt(150) + 30,  // 30-180 correct
+        'wrong': random.nextInt(70) + 5,  // 5-75 wrong
+        'accuracy': (random.nextDouble() * 0.5) + 0.4,  // 40%-90% accuracy
+      };
+      _isLoading = false;
+    });
   }
 
   void _refreshProgress() {
     setState(() => _isLoading = true);
-    _loadProgress();
+    // Simulate network delay
+    Future.delayed(const Duration(milliseconds: 800), _generateRandomProgress);
   }
 
   @override
@@ -87,7 +77,7 @@ class _ProgressWidgetState extends State<ProgressWidget> {
             LinearProgressIndicator(
               value: _progress['accuracy'],
               minHeight: 12,
-              backgroundColor: Theme.of(context).disabledColor,
+              backgroundColor: Theme.of(context).dividerColor,
               color: _getProgressColor(_progress['accuracy']),
               borderRadius: BorderRadius.circular(6),
             ),
