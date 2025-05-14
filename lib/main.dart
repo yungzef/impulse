@@ -1,14 +1,14 @@
-// main.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_web_plugins/url_strategy.dart';
-import 'package:impulse/features/welcome/welcome_page.dart';
-import 'package:impulse/simple_auth_screen.dart';
+import 'package:impulse/core/theme/app_theme.dart';
+import 'package:impulse/features/welcome/presentation/pages/welcome_page.dart';
 
-import 'app_theme.dart';
+import 'core/injection.dart';
 
-Future<void> main() async {
+void main() async {
   setUrlStrategy(PathUrlStrategy());
   WidgetsFlutterBinding.ensureInitialized();
+  setupDependencies(); // Добавить эту строку
   runApp(const ImpulseApp());
 }
 
@@ -20,8 +20,10 @@ class ImpulseApp extends StatelessWidget {
     return MaterialApp(
       title: 'Impulse',
       debugShowCheckedModeBanner: false,
-      theme: AppTheme.lightTheme,
-      home: const AuthScreen(),
+      theme: AppTheme.darkTheme, // Светлая тема
+      darkTheme: AppTheme.darkTheme, // Тёмная тема
+      themeMode: ThemeMode.light, // Явно устанавливаем светлую тему
+      home: const WelcomePage(),
     );
   }
 }

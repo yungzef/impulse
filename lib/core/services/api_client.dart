@@ -1,10 +1,9 @@
-// lib/core/services/api_client.dart
 import 'dart:convert';
-
 import 'package:dio/dio.dart';
+import 'package:impulse/core/config/app_config.dart';
+import 'package:impulse/core/constants/app_constants.dart';
 import 'package:impulse/data/models/question_model.dart';
 import 'package:impulse/data/models/theme_model.dart';
-import '../../core/config.dart';
 
 class ApiClient {
   final Dio _dio;
@@ -13,8 +12,8 @@ class ApiClient {
   ApiClient({this.userId})
       : _dio = Dio(BaseOptions(
     baseUrl: AppConfig.apiBaseUrl,
-    connectTimeout: const Duration(seconds: 10),
-    receiveTimeout: const Duration(seconds: 10),
+    connectTimeout: AppConstants.apiTimeout,
+    receiveTimeout: AppConstants.apiTimeout,
     validateStatus: (status) => status != null && status < 500,
   )) {
     if (userId != null) {
@@ -49,18 +48,13 @@ class ApiClient {
     }
   }
 
-  Future<List<QuestionModel>> getTicketRandom() async {
+  Future<List<QuestionModel>> getTicketRandom({String? userId}) async {
     try {
       final response = await _dio.get(
         '/ticket/random',
-        queryParameters: {'telegram_id': userId},
+        queryParameters: userId != null ? {'telegram_id': userId} : null,
       );
-
-      if (response.statusCode == 200) {
-        return (response.data as List).map((q) => QuestionModel.fromJson(q)).toList();
-      } else {
-        throw Exception('Failed to get random ticket: ${response.statusCode}');
-      }
+      return (response.data as List).map((q) => QuestionModel.fromJson(q)).toList();
     } on DioException catch (e) {
       throw Exception('Failed to get random ticket: ${e.message}');
     }
@@ -90,8 +84,7 @@ class ApiClient {
 
   Future<void> addFavorite(int questionId) async {
     try {
-      await _dio.post('/favorites/add',
-          data: {'question_id': questionId});
+      await _dio.post('/favorites/add', data: {'question_id': questionId});
     } on DioException catch (e) {
       throw Exception('Failed to add favorite: ${e.message}');
     }
@@ -99,8 +92,7 @@ class ApiClient {
 
   Future<void> removeFavorite(int questionId) async {
     try {
-      await _dio.post('/favorites/remove',
-          data: {'question_id': questionId});
+      await _dio.post('/favorites/remove', data: {'question_id': questionId});
     } on DioException catch (e) {
       throw Exception('Failed to remove favorite: ${e.message}');
     }
@@ -136,10 +128,8 @@ class ApiClient {
         '/user/errors',
         queryParameters: {'telegram_id': userId},
       );
-
       final data = response.data as Map<String, dynamic>;
       final questions = data['questions'] as List;
-
       return questions.map((q) => QuestionModel.fromJson(q)).toList();
     } on DioException catch (e) {
       throw Exception('Failed to load error questions: ${e.message}');
@@ -152,7 +142,6 @@ class ApiClient {
         '/user/favorites',
         queryParameters: {'telegram_id': userId},
       );
-
       return (response.data as List)
           .map((e) => QuestionModel.fromJson(e))
           .toList();
@@ -167,17 +156,12 @@ class ApiClient {
         '/user/progress',
         queryParameters: {'telegram_id': userId},
       );
-
-      if (response.statusCode == 200) {
-        return {
-          'total': response.data['total'] ?? 0,
-          'correct': response.data['correct'] ?? 0,
-          'wrong': response.data['wrong'] ?? 0,
-          'accuracy': (response.data['accuracy'] ?? 0.0).toDouble(),
-        };
-      } else {
-        throw Exception('Failed to load progress: ${response.statusCode}');
-      }
+      return {
+        'total': response.data['total'] ?? 0,
+        'correct': response.data['correct'] ?? 0,
+        'wrong': response.data['wrong'] ?? 0,
+        'accuracy': (response.data['accuracy'] ?? 0.0).toDouble(),
+      };
     } on DioException catch (e) {
       throw Exception('Failed to load progress: ${e.message}');
     }
@@ -206,21 +190,15 @@ class ApiClient {
 
   Future<void> trackQuestionAnswer(String questionId, bool isCorrect) async {
     try {
-      final response = await _dio.post(
+      await _dio.post(
         '/user/answer',
         data: {
           'question_id': questionId,
           'is_correct': isCorrect,
           'telegram_id': userId,
         },
-        options: Options(
-          contentType: Headers.jsonContentType,  // Явно указываем JSON
-        ),
+        options: Options(contentType: Headers.jsonContentType),
       );
-
-      if (response.statusCode != 200) {
-        throw Exception('Failed to save answer');
-      }
     } on DioException catch (e) {
       throw Exception('Failed to track answer: ${e.message}');
     }
@@ -232,11 +210,8 @@ class ApiClient {
         isFavorite ? '/user/favorites/add' : '/user/favorites/remove',
         data: jsonEncode({'question_id': questionId}),
         queryParameters: {'telegram_id': userId},
-        options: Options(
-          headers: {'Content-Type': 'application/json'},
-        ),
+        options: Options(headers: {'Content-Type': 'application/json'}),
       );
-
       if (response.statusCode != 200) {
         throw Exception('Failed to toggle favorite: ${response.statusCode}');
       }
@@ -245,55 +220,6 @@ class ApiClient {
     }
   }
 
-  Future<void> addToFavorites(String questionId) async {
-    try {
-      await _dio.post(
-        '/user/favorites/add',
-        data: {'question_id': questionId},
-        queryParameters: {'telegram_id': userId},
-      );
-    } catch (e) {
-      throw Exception('Failed to add to favorites: $e');
-    }
-  }
-
-  Future<void> removeFromFavorites(String questionId) async {
-    try {
-      await _dio.post(
-        '/user/favorites/remove',
-        data: {'question_id': questionId},
-        queryParameters: {'telegram_id': userId},
-      );
-    } catch (e) {
-      throw Exception('Failed to remove from favorites: $e');
-    }
-  }
-
-  Future<void> addToErrors(String questionId) async {
-    try {
-      await _dio.post(
-        '/user/errors/add',
-        data: {'question_id': questionId},
-        queryParameters: {'telegram_id': userId},
-      );
-    } catch (e) {
-      throw Exception('Failed to add to errors: $e');
-    }
-  }
-
-  Future<void> removeFromErrors(String questionId) async {
-    try {
-      await _dio.post(
-        '/user/errors/remove',
-        data: {'question_id': questionId},
-        queryParameters: {'telegram_id': userId},
-      );
-    } catch (e) {
-      throw Exception('Failed to remove from errors: $e');
-    }
-  }
-
-  // Добавьте в lib/core/services/api_client.dart
   Future<void> resetProgress() async {
     try {
       await _dio.post(
@@ -319,8 +245,4 @@ class ApiClient {
       throw Exception('Failed to send feedback: ${e.message}');
     }
   }
-}
-
-class AppConfig {
-  static const apiBaseUrl = 'http://146.120.163.81:8000';
 }

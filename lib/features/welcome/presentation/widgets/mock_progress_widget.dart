@@ -1,60 +1,20 @@
+import 'dart:math';
 import 'package:flutter/material.dart';
-import 'package:impulse/core/services/api_client.dart';
 
-class ProgressWidget extends StatefulWidget {
-  final String? userId;
-
-  const ProgressWidget({super.key, required this.userId});
-
-  @override
-  State<ProgressWidget> createState() => _ProgressWidgetState();
-}
-
-class _ProgressWidgetState extends State<ProgressWidget> {
-  final _client = ApiClient();
-  Map<String, dynamic> _progress = {
-    'total': 0,
-    'correct': 0,
-    'wrong': 0,
-    'accuracy': 0.0,
-  };
-  bool _isLoading = true;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadProgress();
-  }
-
-  Future<void> _loadProgress() async {
-    try {
-      final progress = await _client.getUserProgress();
-      if (mounted) {
-        setState(() {
-          _progress = progress;
-          _isLoading = false;
-        });
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() => _isLoading = false);
-      }
-      debugPrint('Progress load error: $e');
-    }
-  }
-
-  void _refreshProgress() {
-    setState(() => _isLoading = true);
-    _loadProgress();
-  }
+class MockProgressWidget extends StatelessWidget {
+  const MockProgressWidget({super.key});
 
   @override
   Widget build(BuildContext context) {
-    if (_isLoading) {
-      return const Center(child: CircularProgressIndicator());
-    }
+    final random = Random();
+    final progress = {
+      'total': random.nextInt(200) + 50,
+      'correct': random.nextInt(150) + 30,
+      'wrong': random.nextInt(70) + 5,
+      'accuracy': (random.nextDouble() * 0.5) + 0.4,
+    };
 
-    final accuracy = (_progress['accuracy'] * 100).toStringAsFixed(1);
+    final accuracy = ((progress['accuracy'] as double) * 100).toStringAsFixed(1);
     return Card(
       elevation: 0,
       color: Theme.of(context).cardColor,
@@ -66,28 +26,22 @@ class _ProgressWidgetState extends State<ProgressWidget> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Row(
+            const Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
                   'Ваш прогрес',
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: TextStyle(fontWeight: FontWeight.bold),
                 ),
-                IconButton(
-                  icon: Icon(Icons.refresh, color: Theme.of(context).iconTheme.color),
-                  onPressed: _refreshProgress,
-                  iconSize: 20,
-                ),
+                Icon(Icons.refresh, size: 20),
               ],
             ),
             const SizedBox(height: 16),
             LinearProgressIndicator(
-              value: _progress['accuracy'],
+              value: progress['accuracy'] as double,
               minHeight: 12,
               backgroundColor: Theme.of(context).disabledColor,
-              color: _getProgressColor(_progress['accuracy']),
+              color: _getProgressColor(progress['accuracy'] as double),
               borderRadius: BorderRadius.circular(6),
             ),
             const SizedBox(height: 8),
@@ -102,21 +56,21 @@ class _ProgressWidgetState extends State<ProgressWidget> {
               children: [
                 _buildStatItem(
                   context,
-                  value: _progress['total'].toString(),
+                  value: progress['total'].toString(),
                   label: 'Всього',
                   icon: Icons.format_list_numbered,
                   color: Colors.blue,
                 ),
                 _buildStatItem(
                   context,
-                  value: _progress['correct'].toString(),
+                  value: progress['correct'].toString(),
                   label: 'Правильно',
                   icon: Icons.check_circle,
                   color: Colors.green,
                 ),
                 _buildStatItem(
                   context,
-                  value: _progress['wrong'].toString(),
+                  value: progress['wrong'].toString(),
                   label: 'Помилки',
                   icon: Icons.error_outline,
                   color: Colors.red,
