@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:impulse/features/welcome/presentation/pages/welcome_page.dart';
+
+import 'package:google_fonts/google_fonts.dart';
 
 class AppTheme {
-  static const Color primaryColor = Color(0xFF87EB97);
+  static const Color primaryColor = Color(0xFF73C080);
+  static const Color darkPrimaryColor = Color(0xFF87EB97);
   static const Color successColor = Color(0xFF4CAF50);
   static const Color errorColor = Color(0xFFC95249);
   static const Color warningColor = Color(0xFFE0B478);
@@ -34,9 +38,7 @@ class AppTheme {
         color: Colors.white,
         elevation: 2,
         margin: const EdgeInsets.all(16),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(24),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
@@ -46,16 +48,11 @@ class AppTheme {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(24),
           ),
-          textStyle: const TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-          ),
+          textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
         ),
       ),
       textButtonTheme: TextButtonThemeData(
-        style: TextButton.styleFrom(
-          foregroundColor: primaryColor,
-        ),
+        style: TextButton.styleFrom(foregroundColor: primaryColor),
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
@@ -73,7 +70,7 @@ class AppTheme {
     return ThemeData(
       brightness: Brightness.dark,
       colorScheme: const ColorScheme.dark(
-        primary: primaryColor,
+        primary: darkPrimaryColor,
         secondary: Color(0xFF03DAC6),
         surface: Color(0xFF2C2C2E),
         background: Color(0xFF1C1C1E),
@@ -97,9 +94,34 @@ class AppTheme {
         color: const Color(0xFF2C2C2E),
         elevation: 0,
         margin: const EdgeInsets.all(16),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(24),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+      ),
+    );
+  }
+
+  static void setTheme(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final newTheme = isDark ? lightTheme : darkTheme;
+
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute(
+        builder:
+            (context) => Theme(
+              data: newTheme,
+              child: Builder(
+                builder: (context) {
+                  final currentRoute = ModalRoute.of(context)?.settings.name;
+                  return Navigator(
+                    onGenerateRoute: (settings) {
+                      return MaterialPageRoute(
+                        builder: (context) => WelcomePage(),
+                      );
+                    },
+                  );
+                },
+              ),
+            ),
       ),
     );
   }

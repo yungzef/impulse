@@ -40,7 +40,7 @@ class TicketCubit extends Cubit<TicketState> {
     }
   }
 
-  Future<void> toggleFavorite(String questionId, bool isFavorite) async {
+  Future<void> toggleFavorite(String questionId, bool? isFavorite) async {
     if (state is! TicketLoaded) return;
 
     try {

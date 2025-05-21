@@ -9,7 +9,7 @@ class ApiClient {
   final Dio _dio;
   final String? userId;
 
-  ApiClient({this.userId})
+  ApiClient({required this.userId})
       : _dio = Dio(BaseOptions(
     baseUrl: AppConfig.apiBaseUrl,
     connectTimeout: AppConstants.apiTimeout,
@@ -19,27 +19,72 @@ class ApiClient {
     if (userId != null) {
       _dio.interceptors.add(InterceptorsWrapper(
         onRequest: (options, handler) {
-          options.queryParameters['telegram_id'] = userId;
+          options.queryParameters['user_id'] = userId;
+          return handler.next(options);
+        },
+      ));
+      _dio.interceptors.add(InterceptorsWrapper(
+        onRequest: (options, handler) {
+          options.headers['Content-Type'] = 'application/json';
+          return handler.next(options);
+        },
+      ));
+      _dio.interceptors.add(InterceptorsWrapper(
+        onRequest: (options, handler) {
+          options.queryParameters['user_id'] = userId;
+          print('Adding user_id: $userId to request'); // Логирование
           return handler.next(options);
         },
       ));
     }
   }
 
+  Future<void> sendLogsToServer(String? log) async {
+    if (log == null || log.isEmpty) return;
+
+    final dio = Dio(BaseOptions(
+      baseUrl: AppConfig.apiBaseUrl,
+      connectTimeout: const Duration(seconds: 5),
+      receiveTimeout: const Duration(seconds: 5),
+      headers: {'Content-Type': 'application/json'},
+    ));
+
+    try {
+      await dio.post(
+        '/logs',
+        data: {'log': log, 'timestamp': DateTime.now().toIso8601String()},
+      );
+    } catch (e) {
+      // Не выводим ошибку в проде
+    }
+  }
+
   Future<List<ThemeModel>> getThemes() async {
     try {
       final response = await _dio.get('/themes');
-      return (response.data as List)
-          .map((e) => ThemeModel.fromJson(e))
-          .toList();
+
+      // Debug print to verify response structure
+      print('Raw API response: ${response.data}');
+
+      if (response.data is List) {
+        return (response.data as List)
+            .map((e) => ThemeModel.fromJson(e as Map<String, dynamic>))
+            .toList();
+      } else {
+        throw Exception('Invalid response format - expected List');
+      }
     } on DioException catch (e) {
       throw Exception('Failed to load themes: ${e.message}');
     }
   }
 
+
   Future<List<QuestionModel>> getThemeQuestions(int themeId) async {
     try {
-      final response = await _dio.get('/themes/$themeId');
+      final response = await _dio.get(
+        '/themes/$themeId'
+      );
+
       return (response.data['questions'] as List)
           .map((e) => QuestionModel.fromJson(e))
           .toList();
@@ -52,7 +97,7 @@ class ApiClient {
     try {
       final response = await _dio.get(
         '/ticket/random',
-        queryParameters: userId != null ? {'telegram_id': userId} : null,
+        queryParameters: userId != null ? {'user_id': userId} : null,
       );
       return (response.data as List).map((q) => QuestionModel.fromJson(q)).toList();
     } on DioException catch (e) {
@@ -98,15 +143,15 @@ class ApiClient {
     }
   }
 
-  Future<void> sendAnswer(int questionId, bool isCorrect) async {
-    try {
-      await _dio.post('/answer', data: {
+  Future<void> sendAnswer(String questionId, bool isCorrect) async {
+    await _dio.post(
+      '/user/answer',
+      data: {
         'question_id': questionId,
         'is_correct': isCorrect,
-      });
-    } on DioException catch (e) {
-      throw Exception('Failed to send answer: ${e.message}');
-    }
+        'user_id': userId, // Теперь передается явно
+      },
+    );
   }
 
   Future<Map<String, dynamic>> getProgress() async {
@@ -124,15 +169,14 @@ class ApiClient {
 
   Future<List<QuestionModel>> getErrorQuestions() async {
     try {
-      final response = await _dio.get(
-        '/user/errors',
-        queryParameters: {'telegram_id': userId},
-      );
-      final data = response.data as Map<String, dynamic>;
-      final questions = data['questions'] as List;
-      return questions.map((q) => QuestionModel.fromJson(q)).toList();
+      print('Fetching errors for user: $userId'); // Логирование
+      final response = await _dio.get('/user/errors');
+      return (response.data['questions'] as List)
+          .map((e) => QuestionModel.fromJson(e))
+          .toList();
     } on DioException catch (e) {
-      throw Exception('Failed to load error questions: ${e.message}');
+      print('Error loading errors: ${e.response?.data}');
+      throw Exception('Failed to load errors: ${e.message}');
     }
   }
 
@@ -140,7 +184,7 @@ class ApiClient {
     try {
       final response = await _dio.get(
         '/user/favorites',
-        queryParameters: {'telegram_id': userId},
+        queryParameters: {'user_id': userId},
       );
       return (response.data as List)
           .map((e) => QuestionModel.fromJson(e))
@@ -154,7 +198,7 @@ class ApiClient {
     try {
       final response = await _dio.get(
         '/user/progress',
-        queryParameters: {'telegram_id': userId},
+        queryParameters: {'user_id': userId},
       );
       return {
         'total': response.data['total'] ?? 0,
@@ -173,7 +217,7 @@ class ApiClient {
         '/theme/progress',
         queryParameters: {
           'theme_id': themeId,
-          'telegram_id': userId,
+          'user_id': userId,
         },
       );
       return {
@@ -195,7 +239,7 @@ class ApiClient {
         data: {
           'question_id': questionId,
           'is_correct': isCorrect,
-          'telegram_id': userId,
+          'user_id': userId,
         },
         options: Options(contentType: Headers.jsonContentType),
       );
@@ -204,14 +248,32 @@ class ApiClient {
     }
   }
 
-  Future<void> toggleFavorite(String questionId, bool isFavorite) async {
+  Future<List<QuestionModel>> searchQuestions(String query) async {
     try {
+      final response = await _dio.get(
+        '/search/questions',
+        queryParameters: {'query': query},
+      );
+      return (response.data['results'] as List)
+          .map((e) => QuestionModel.fromJson(e))
+          .toList();
+    } on DioException catch (e) {
+      throw Exception('Search failed: ${e.message}');
+    }
+  }
+
+  Future<void> toggleFavorite(String questionId, bool? isCurrentlyFavorite) async {
+    try {
+      // Если isCurrentlyFavorite == null или false, значит, вопрос НЕ в избранном → добавляем
+      final shouldAdd = isCurrentlyFavorite != true;
+
       final response = await _dio.post(
-        isFavorite ? '/user/favorites/add' : '/user/favorites/remove',
+        shouldAdd ? '/user/favorites/add' : '/user/favorites/remove',
         data: jsonEncode({'question_id': questionId}),
-        queryParameters: {'telegram_id': userId},
+        queryParameters: {'user_id': userId},
         options: Options(headers: {'Content-Type': 'application/json'}),
       );
+
       if (response.statusCode != 200) {
         throw Exception('Failed to toggle favorite: ${response.statusCode}');
       }
@@ -224,7 +286,7 @@ class ApiClient {
     try {
       await _dio.post(
         '/user/reset',
-        queryParameters: {'telegram_id': userId},
+        queryParameters: {'user_id': userId},
       );
     } on DioException catch (e) {
       throw Exception('Failed to reset progress: ${e.message}');
@@ -238,7 +300,7 @@ class ApiClient {
         data: {
           'feedback': feedback,
           'rating': rating,
-          'telegram_id': userId,
+          'user_id': userId,
         },
       );
     } on DioException catch (e) {

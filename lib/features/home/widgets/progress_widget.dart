@@ -11,7 +11,7 @@ class ProgressWidget extends StatefulWidget {
 }
 
 class _ProgressWidgetState extends State<ProgressWidget> {
-  final _client = ApiClient();
+  late ApiClient _client;
   Map<String, dynamic> _progress = {
     'total': 0,
     'correct': 0,
@@ -23,6 +23,7 @@ class _ProgressWidgetState extends State<ProgressWidget> {
   @override
   void initState() {
     super.initState();
+    _client = ApiClient(userId: widget.userId);
     _loadProgress();
   }
 
@@ -62,7 +63,7 @@ class _ProgressWidgetState extends State<ProgressWidget> {
         borderRadius: BorderRadius.circular(24),
       ),
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(32),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [

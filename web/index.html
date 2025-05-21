@@ -1,41 +1,62 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <!--
-      If you are serving your web app in a path other than the root, change the
-      href value below to reflect the base path you are serving from.
-
-      The path provided below has to start and end with a slash "/" in order for
-      it to work correctly.
-
-      For more details:
-      * https://developer.mozilla.org/en-US/docs/Web/HTML/Element/base
-
-      This is a placeholder for base href that will be replaced by the value of
-      the `--base-href` argument provided to `flutter build`.
-    -->
     <base href="$FLUTTER_BASE_HREF">
 
     <meta charset="UTF-8">
     <meta content="IE=Edge" http-equiv="X-UA-Compatible">
-    <meta name="description" content="impulse">
+    <meta name="google-signin-client_id"
+          content="147419489204-mcv45kv1ndceffp1efnn2925cfet1ocb.apps.googleusercontent.com"/>
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+
+    <meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests">
 
     <!-- iOS meta tags & icons -->
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black">
-    <meta name="apple-mobile-web-app-title" content="impulse">
-    <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 
-    <!-- Favicon -->
-    <link rel="icon" type="image/png" href="favicon.png"/>
+    <link rel="icon" type="image/png" href="/icons/favicon-96x96.png" sizes="96x96" />
+    <link rel="icon" type="image/svg+xml" href="/icons/favicon.svg" />
+    <link rel="shortcut icon" href="/icons/favicon.ico" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/icons/apple-touch-icon.png" />
+    <link rel="apple-touch-icon" sizes="192x192" href="/icons/web-app-manifest-192x192.png" />
+    <link rel="apple-touch-icon" sizes="512x512" href="/icons/web-app-manifest-512x512.png" />
+    <meta name="apple-mobile-web-app-title" content="Імпульс" />
 
-    <title>impulse</title>
+    <title>Impulse PDR — Здай теоретичний іспит з ПДР з першої спроби</title>
     <link rel="manifest" href="manifest.json">
-    <base href="/" />
-    <script src="https://accounts.google.com/gsi/client" async defer></script>
-    <script src="https://apis.google.com/js/api.js" async defer></script>
+    <meta name="description"
+          content="Онлайн-платформа для ефективної підготовки до теоретичного іспиту з ПДР. Проходь актуальні тести, слідкуй за результатами та складай з першого разу!">
+    <meta name="keywords"
+          content="ПДР, теоретичний іспит, ПДР онлайн, тести ПДР Україна, підготовка до іспиту, автошкола, impulse pdr, пдр 2024">
+    <meta name="robots" content="index, follow">
+
+    <!-- Open Graph для соцмереж -->
+    <meta property="og:title" content="Impulse PDR — Підготовка до ПДР онлайн">
+    <meta property="og:description"
+          content="Готуйся до іспиту з ПДР онлайн. Тести, прогрес, пояснення — все для здачі з першої спроби.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://impulsepdr.online/">
+    <meta property="og:image" content="https://impulsepdr.online/assets/images/preview.jpg">
+    <!-- заміни на свій реальний банер -->
+
+    <!-- Schema.org JSON-LD -->
+    <script type="application/ld+json">
+        {
+            "@context": "https://schema.org",
+            "@type": "WebSite",
+            "name": "Impulse PDR",
+            "url": "https://impulsepdr.online",
+            "description": "Онлайн-платформа для підготовки до іспиту з ПДР. Пройди актуальні тести та склади іспит з першого разу.",
+            "inLanguage": "uk"
+        }
+    </script>
 </head>
 <body>
+<noscript>
+    <h1>Impulse PDR — Онлайн підготовка до іспиту з ПДР</h1>
+    <p>Вивчайте ПДР онлайн: тести, пояснення, прогрес. Платформа для ефективної підготовки до теоретичного іспиту.</p>
+</noscript>
 <script src="flutter_bootstrap.js" async></script>
 </body>
 </html>

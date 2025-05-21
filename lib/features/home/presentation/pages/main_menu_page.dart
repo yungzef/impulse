@@ -1,12 +1,22 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:impulse/core/theme/app_theme.dart';
-import 'package:impulse/features/favorites/presentation/pages/favorites_page.dart';
+import 'package:impulse/features/ticket/presentation/pages/favorites_ticket_page.dart';
 import 'package:impulse/features/settings/presentation/pages/settings_page.dart';
 import 'package:impulse/features/feedback/presentation/pages/feedback_page.dart';
 import 'package:impulse/features/themes/presentation/pages/theme_list_page.dart';
 import 'package:impulse/features/ticket/presentation/pages/errors_ticket_page.dart';
 import 'package:impulse/features/ticket/presentation/pages/random_ticket_page.dart';
 import 'package:impulse/features/home/widgets/progress_widget.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:provider/provider.dart';
+
+import '../../../../core/config/app_config.dart';
+import '../../../../core/local_storage.dart';
+import '../../../../core/theme/theme_provider.dart';
+import '../../../profile/pages/profile_page.dart';
+import '../../../search/search_result_page.dart';
+import '../../../welcome/presentation/pages/welcome_page.dart';
 
 class MainMenuPage extends StatefulWidget {
   final String? userId;
@@ -42,7 +52,7 @@ class _MainMenuPageState extends State<MainMenuPage> {
     final size = MediaQuery.of(context).size;
     final isDesktop = size.width > 1200;
     final isTablet = size.width > 800;
-    final crossAxisCount = isDesktop ? 3 : (isTablet ? 2 : 1);
+    final crossAxisCount = isDesktop ? 6 : (isTablet ? 3 : 2);
 
     return Scaffold(
       backgroundColor: colorScheme.background,
@@ -50,9 +60,13 @@ class _MainMenuPageState extends State<MainMenuPage> {
         slivers: [
           // Шапка с поиском и профилем
           SliverAppBar(
-            expandedHeight: isDesktop ? 100 : 80,
+            automaticallyImplyLeading: false,
+            forceElevated: true, // here
+            elevation: 20, // question having 0 here
+            pinned: false,
             floating: true,
-            pinned: true,
+            snap: true,
+            expandedHeight: isDesktop ? 100 : 80,
             flexibleSpace: FlexibleSpaceBar(
               collapseMode: CollapseMode.pin,
               background: Container(
@@ -93,7 +107,10 @@ class _MainMenuPageState extends State<MainMenuPage> {
                               ),
                               onSubmitted: (value) {
                                 if (value.isNotEmpty) {
-                                  _searchQuestions(context: context, query: value);
+                                  _searchQuestions(
+                                    context: context,
+                                    query: value,
+                                  );
                                 }
                               },
                               elevation: MaterialStateProperty.all(0),
@@ -108,7 +125,8 @@ class _MainMenuPageState extends State<MainMenuPage> {
                               constraints: BoxConstraints(
                                 minHeight: 48,
                                 maxHeight: 48,
-                                minWidth: maxWidth * 0.6, // Минимальная ширина поиска
+                                minWidth:
+                                    maxWidth * 0.6, // Минимальная ширина поиска
                               ),
                             ),
                           ),
@@ -126,7 +144,7 @@ class _MainMenuPageState extends State<MainMenuPage> {
 
           SliverPadding(
             padding: EdgeInsets.symmetric(
-              horizontal: isDesktop ? 100 : (isTablet ? 40 : 24),
+              horizontal: isDesktop ? 100 : (isTablet ? 40 : 10),
               vertical: 20,
             ),
             sliver: SliverList(
@@ -152,9 +170,9 @@ class _MainMenuPageState extends State<MainMenuPage> {
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
                   crossAxisCount: crossAxisCount,
-                  childAspectRatio: 2,
-                  mainAxisSpacing: 16,
-                  crossAxisSpacing: 16,
+                  childAspectRatio: 1,
+                  mainAxisSpacing: 0,
+                  crossAxisSpacing: 0,
                   children: [
                     _buildFeatureCard(
                       context,
@@ -208,7 +226,7 @@ class _MainMenuPageState extends State<MainMenuPage> {
                           () => _navigateTo(
                             context,
                             ErrorsTicketPage(
-                              userId: widget.userId,
+                              userId: widget.userId!,
                               onProgressUpdated: () {},
                             ),
                           ),
@@ -222,7 +240,7 @@ class _MainMenuPageState extends State<MainMenuPage> {
                       onTap:
                           () => _navigateTo(
                             context,
-                            FavoritesPage(userId: widget.userId),
+                            FavoritesTicketPage(userId: widget.userId!, onProgressUpdated: (){},),
                           ),
                     ),
                     _buildFeatureCard(
@@ -289,10 +307,7 @@ class _MainMenuPageState extends State<MainMenuPage> {
                       description: 'Персоналізація додатку',
                       color: colorScheme.secondary,
                       onTap:
-                          () => _navigateTo(
-                            context,
-                            SettingsPage(userId: widget.userId),
-                          ),
+                          () => _showProfileMenu(context),
                     ),
                   ],
                 ),
@@ -326,23 +341,20 @@ class _MainMenuPageState extends State<MainMenuPage> {
           child: CircleAvatar(
             radius: 20,
             backgroundColor: colorScheme.primary.withOpacity(0.2),
-            child: widget.userEmail != null
-                ? Text(
-              widget.userEmail!.substring(0, 1).toUpperCase(),
-              style: theme.textTheme.titleLarge?.copyWith(
-                color: colorScheme.primary,
-              ),
-            )
-                : Icon(
-              Icons.person,
-              color: colorScheme.primary,
-            ),
+            child:
+                widget.userEmail != null
+                    ? Text(
+                      widget.userEmail!.substring(0, 1).toUpperCase(),
+                      style: theme.textTheme.titleLarge?.copyWith(
+                        color: colorScheme.primary,
+                      ),
+                    )
+                    : Icon(Icons.person, color: colorScheme.primary),
           ),
         ),
       ),
     );
   }
-
 
   Widget _buildFeatureCard(
     BuildContext context, {
@@ -485,7 +497,7 @@ class _MainMenuPageState extends State<MainMenuPage> {
             ),
             const SizedBox(height: 12),
             Text(
-              'Додано 15 нових питань про дорожні знаки (версія 1.2.3)',
+              'Наразі сайт знаходиться на стадії розробки, але вже зараз ви можете вчити пдр безкоштовно (версія 0.7)',
               style: theme.textTheme.bodyMedium,
             ),
           ],
@@ -500,92 +512,268 @@ class _MainMenuPageState extends State<MainMenuPage> {
 
   void _searchQuestions({required BuildContext context, required String query}) {
     if (query.trim().isEmpty) return;
-    // Реализация поиска
-    // Navigator.push(
-    //   context,
-    //   MaterialPageRoute(
-    //     builder: (context) => SearchResultsPage(
-    //       query: query,
-    //       userId: widget.userId,
-    //     ),
-    //   ),
-    // );
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => SearchResultsPage(
+          query: query,
+          userId: widget.userId,
+        ),
+      ),
+    );
   }
 
   void _showProfileMenu(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
       builder:
           (context) => Container(
+            decoration: BoxDecoration(
+              color: theme.colorScheme.surface,
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(24),
+              ),
+            ),
             padding: const EdgeInsets.all(24),
             child: Column(
               mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                // Перетаскиваемая ручка
+                Container(
+                  width: 48,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.onSurface.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+                const SizedBox(height: 16),
+
+                // Заголовок и аватар
                 Row(
                   children: [
                     CircleAvatar(
-                      radius: 30,
-                      backgroundColor: Theme.of(
-                        context,
-                      ).colorScheme.primary.withOpacity(0.2),
+                      radius: 28,
+                      backgroundColor: theme.colorScheme.primary.withOpacity(
+                        0.1,
+                      ),
                       child:
                           widget.userEmail != null
                               ? Text(
                                 widget.userEmail!.substring(0, 1).toUpperCase(),
-                                style: Theme.of(
-                                  context,
-                                ).textTheme.titleLarge?.copyWith(
-                                  color: Theme.of(context).colorScheme.primary,
+                                style: theme.textTheme.titleLarge?.copyWith(
+                                  color: theme.colorScheme.primary,
                                 ),
                               )
                               : Icon(
                                 Icons.person,
-                                color: Theme.of(context).colorScheme.primary,
+                                color: theme.colorScheme.primary,
                               ),
                     ),
                     const SizedBox(width: 16),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          widget.userName ?? 'Користувач',
-                          style: Theme.of(context).textTheme.titleLarge,
-                        ),
-                        Text(
-                          widget.userEmail ?? '',
-                          style: Theme.of(
-                            context,
-                          ).textTheme.bodySmall?.copyWith(
-                            color: Theme.of(
-                              context,
-                            ).colorScheme.onSurface.withOpacity(0.6),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            widget.userName ?? 'Користувач',
+                            style: theme.textTheme.titleLarge,
                           ),
-                        ),
-                      ],
+                          Text(
+                            widget.userEmail ?? '',
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: theme.colorScheme.onSurface.withOpacity(
+                                0.6,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ],
                 ),
                 const SizedBox(height: 24),
-                ListTile(
-                  leading: Icon(Icons.settings),
-                  title: Text('Налаштування'),
+
+                // Настройки темы
+                _buildSettingItem(
+                  context,
+                  icon: Icons.brightness_6,
+                  title: 'Темна тема',
+                  trailing: Switch(
+                    value: isDark,
+                    onChanged: (value) async {
+                      Provider.of<ThemeProvider>(context, listen: false)
+                          .setTheme(value ? ThemeMode.dark : ThemeMode.light);
+                      Navigator.pop(context);
+                    },
+                  ),
+                ),
+                const Divider(height: 1),
+
+                // Обнулить прогресс
+                _buildSettingItem(
+                  context,
+                  icon: Icons.restart_alt,
+                  title: 'Обнулити прогрес',
+                  onTap: () => _confirmResetProgress(context),
+                ),
+                const Divider(height: 1),
+
+                // Подписка
+                _buildSettingItem(
+                  context,
+                  icon: Icons.workspace_premium,
+                  title: 'Підписка',
+                  trailing: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.orange.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      'Без підписки',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: Colors.orange,
+                      ),
+                    ),
+                  ),
                   onTap: () {
                     Navigator.pop(context);
-                    _navigateTo(context, SettingsPage(userId: widget.userId));
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Функція підписки в розробці'),
+                      ),
+                    );
                   },
                 ),
-                ListTile(
-                  leading: Icon(Icons.exit_to_app),
-                  title: Text('Вийти'),
+                const Divider(height: 1),
+
+                // Выход
+                _buildSettingItem(
+                  context,
+                  icon: Icons.exit_to_app,
+                  title: 'Вийти з акаунта',
+                  textColor: theme.colorScheme.error,
+                  iconColor: theme.colorScheme.error,
                   onTap: () {
-                    // Реализация выхода
                     Navigator.pop(context);
+                    _confirmLogout(context);
                   },
                 ),
               ],
             ),
           ),
     );
+  }
+
+  Widget _buildSettingItem(
+    BuildContext context, {
+    required IconData icon,
+    required String title,
+    Widget? trailing,
+    Color? textColor,
+    Color? iconColor,
+    VoidCallback? onTap,
+  }) {
+    final theme = Theme.of(context);
+    return ListTile(
+      leading: Icon(icon, color: iconColor ?? theme.colorScheme.onSurface),
+      title: Text(
+        title,
+        style: theme.textTheme.bodyLarge?.copyWith(
+          color: textColor ?? theme.colorScheme.onSurface,
+        ),
+      ),
+      trailing: trailing,
+      onTap: onTap,
+      contentPadding: EdgeInsets.zero,
+      minLeadingWidth: 24,
+    );
+  }
+
+  Future<void> _confirmResetProgress(BuildContext context) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder:
+          (context) => AlertDialog(
+            title: const Text('Обнулити прогрес?'),
+            content: const Text(
+              'Ви впевнені, що хочете видалити всю свою статистику?',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text('Скасувати'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(context, true),
+                child: const Text('Обнулити'),
+              ),
+            ],
+          ),
+    );
+
+    if (confirmed == true) {
+      Navigator.pop(context); // Закрываем bottom sheet
+      // Реализация обнуления прогреса
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Прогрес успішно обнулено')));
+    }
+  }
+
+  Future<void> _confirmLogout(BuildContext context) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder:
+          (context) => AlertDialog(
+            title: const Text('Вийти з акаунта?'),
+            content: const Text('Ви впевнені, що хочете вийти?'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text('Скасувати'),
+              ),
+              TextButton(
+                onPressed: () => () async {
+                    try {
+                      final prefs = await SharedPreferences.getInstance();
+                      await prefs.clear();
+                      Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(builder: (context) => const WelcomePage()),
+                      );
+                      return true;
+                    } catch (e) {
+                      debugPrint('Sign out error: $e');
+                      if (mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('Помилка виходу: ${e.toString()}'),
+                            backgroundColor: Theme.of(context).colorScheme.error,
+                          ),
+                        );
+                      }
+                    }
+                },
+                child: const Text('Вийти'),
+              ),
+            ],
+          ),
+    );
+
+    if (confirmed == true) {
+      // Реализация выхода
+      Navigator.popUntil(context, (route) => route.isFirst);
+    }
   }
 }

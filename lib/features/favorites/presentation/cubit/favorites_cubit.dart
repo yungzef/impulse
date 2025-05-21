@@ -21,7 +21,7 @@ class FavoritesCubit extends Cubit<FavoritesState> {
 
   Future<void> toggleFavorite(QuestionModel question) async {
     try {
-      await _client.toggleFavorite(question.id, !question.isFavorite);
+      await _client.toggleFavorite(question.id, question.isFavorite);
       emit(FavoritesUpdated(question));
       await loadFavorites();
     } catch (e) {

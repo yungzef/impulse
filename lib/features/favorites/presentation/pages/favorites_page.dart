@@ -6,7 +6,7 @@ import 'package:impulse/data/models/question_model.dart';
 import 'package:impulse/features/favorites/presentation/cubit/favorites_cubit.dart';
 
 class FavoritesPage extends StatefulWidget {
-  final String? userId;
+  final String userId;
 
   const FavoritesPage({super.key, required this.userId});
 

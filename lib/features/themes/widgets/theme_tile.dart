@@ -14,7 +14,7 @@ class ThemeTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final progress = theme.lastAnsweredIndex != null
-        ? (theme.lastAnsweredIndex! + 1) / theme.questionCount
+        ? (theme.lastAnsweredIndex!) / theme.questionCount
         : 0.0;
     final progressPercent = (progress * 100).round();
 

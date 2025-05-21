@@ -4,11 +4,19 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:impulse/features/welcome/presentation/pages/browser_required_page.dart';
 import 'package:impulse/features/welcome/presentation/widgets/mock_progress_widget.dart';
-import 'package:impulse/features/welcome/presentation/pages/auth_screen.dart';
+import 'package:universal_html/html.dart' as html;
+import 'package:url_launcher/url_launcher.dart';
 
+import '../../../../core/theme/app_theme.dart';
+import '../../../home/presentation/pages/home_page.dart';
 import '../widgets/learning_modes.dart';
 import '../../../home/widgets/levitating_mockup.dart';
+import '../widgets/welcome_app_bar.dart';
+import 'auth_page.dart';
+
+const bool isProduction = bool.fromEnvironment('dart.vm.product');
 
 class WelcomePage extends StatefulWidget {
   const WelcomePage({super.key});
@@ -26,71 +34,150 @@ class _WelcomePageState extends State<WelcomePage> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isMobile = MediaQuery.of(context).size.width < 1000;
-    final isTablet = MediaQuery.of(context).size.width < 1100;
+    final isMobile = MediaQuery.of(context).size.width < 900;
+    final isTablet = MediaQuery.of(context).size.width < 1300;
 
     return Scaffold(
-      body: SingleChildScrollView(
-        child: Column(
-          children: [
-            // Hero Section
-            Container(
-              padding: EdgeInsets.symmetric(
-                horizontal: isMobile ? 16 : 24,
-                vertical: isMobile ? 40 : 80,
-              ),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    theme.colorScheme.background.withOpacity(0.9),
-                    theme.colorScheme.background,
-                  ],
-                ),
-              ),
-              child: Padding(
-                padding: EdgeInsets.symmetric(
-                  horizontal: isMobile ? 16 : (isTablet ? 40 : 100),
-                ),
-                child:
-                    isMobile
+      body: CustomScrollView(
+        slivers: [
+          WelcomeSliverAppBar(
+            onLoginPressed: () {navigateToAuth();},
+            onRegisterPressed: () {navigateToAuth();},
+            onTopicsPressed: () {navigateToAuth();},
+            onTicketPressed: () {navigateToAuth();},
+          ),
+          SliverToBoxAdapter(
+            child: Column(
+              children: [
+                // Hero Section
+                Container(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: isMobile ? 16 : 24,
+                    vertical: isMobile ? 40 : 80,
+                  ),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        theme.colorScheme.background.withOpacity(0.9),
+                        theme.colorScheme.background,
+                      ],
+                    ),
+                  ),
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: isMobile ? 16 : (isTablet ? 40 : 100),
+                    ),
+                    child: isMobile
                         ? _buildMobileHero(context, theme)
                         : _buildDesktopHero(context, theme),
+                  ),
+                ),
+
+                // Другие секции (раскомментируй по мере необходимости)
+                _buildPlatformFeatures(isMobile, isTablet, theme),
+                _buildSmartTrainer(isMobile, theme),
+                _buildTestingModes(isMobile, isTablet, theme),
+                _buildStatisticsSection(isMobile, theme),
+                _buildTestimonials(isMobile, theme),
+                _buildMobileVersionSection(isMobile, theme),
+                _buildFAQSection(isMobile, theme),
+                _buildFooter(theme),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAdvantagesBlock(BuildContext context, bool isMobile) {
+    final theme = Theme.of(context);
+    final textColor =
+        theme.brightness == Brightness.dark ? Colors.white : Colors.black87;
+
+    Widget buildAdvantage({
+      required IconData icon,
+      required String title,
+      required String subtitle,
+    }) {
+      return Container(
+        width: isMobile ? double.infinity : 300,
+        padding: const EdgeInsets.all(20),
+        margin: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: theme.cardColor,
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            if (theme.brightness == Brightness.light)
+              BoxShadow(
+                color: Colors.grey.withOpacity(0.1),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.primary.withOpacity(0.2),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(icon, color: theme.colorScheme.primary, size: 28),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              title,
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: textColor,
               ),
             ),
-
-            // Learning Modes
-            Padding(
-              padding: EdgeInsets.symmetric(
-                horizontal: isMobile ? 16 : (isTablet ? 40 : 100),
-              ),
-              child: LearningModes(),
+            const SizedBox(height: 8),
+            Text(
+              subtitle,
+              style: TextStyle(fontSize: 16, color: textColor.withOpacity(0.7)),
             ),
+          ],
+        ),
+      );
+    }
 
-            // Platform Features
-            _buildPlatformFeatures(isMobile, isTablet, theme),
-
-            // Smart Trainer
-            _buildSmartTrainer(isMobile, theme),
-
-            // Testing Modes
-            _buildTestingModes(isMobile, theme),
-
-            // Statistics
-            _buildStatisticsSection(isMobile, theme),
-
-            // Testimonials
-            _buildTestimonials(isMobile, theme),
-
-            // Mobile Version
-            _buildMobileVersionSection(isMobile, theme),
-
-            // FAQ Section
-            _buildFAQSection(isMobile, theme),
-
-            // Footer
-            _buildFooter(theme),
+    return Container(
+      padding: EdgeInsets.symmetric(
+        horizontal: isMobile ? 20 : 80,
+        vertical: 40,
+      ),
+      color: theme.scaffoldBackgroundColor,
+      child: Center(
+        child: Wrap(
+          spacing: 10,
+          runSpacing: 10,
+          alignment: WrapAlignment.center,
+          children: [
+            buildAdvantage(
+              icon: Icons.verified,
+              title: 'Офіційна база',
+              subtitle:
+                  'Ви вирішуєте саме ті питання, що будуть на іспиті в МВС',
+            ),
+            buildAdvantage(
+              icon: Icons.devices,
+              title: 'Єдиний доступ',
+              subtitle:
+                  'Один акаунт — і ви маєте доступ у додатку та веб-версії',
+            ),
+            buildAdvantage(
+              icon: Icons.workspace_premium_outlined,
+              title: 'Цілком безкоштовно',
+              subtitle:
+                  'Жодної плати за навчання — лише користуйтесь і готуйтесь',
+            ),
           ],
         ),
       ),
@@ -131,10 +218,7 @@ class _WelcomePageState extends State<WelcomePage> {
         Center(
           child: OutlinedButton(
             onPressed: () {
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(builder: (context) => const AuthScreen()),
-              );
+              navigateToAuth();
             },
             style: OutlinedButton.styleFrom(
               side: BorderSide(color: theme.colorScheme.primary),
@@ -192,10 +276,7 @@ class _WelcomePageState extends State<WelcomePage> {
               const SizedBox(height: 40),
               OutlinedButton(
                 onPressed: () {
-                  Navigator.pushReplacement(
-                    context,
-                    MaterialPageRoute(builder: (context) => const AuthScreen()),
-                  );
+                  navigateToAuth();
                 },
                 style: OutlinedButton.styleFrom(
                   side: BorderSide(color: theme.colorScheme.primary),
@@ -231,15 +312,7 @@ class _WelcomePageState extends State<WelcomePage> {
       child: Stack(
         alignment: Alignment.center,
         children: [
-          if (mounted)
-            Blob.animatedRandom(
-              styles: BlobStyles(color: theme.colorScheme.primary),
-              loop: true,
-              size: 450,
-              edgesCount: 5,
-              minGrowth: 4,
-              duration: const Duration(milliseconds: 5000),
-            ),
+          if (mounted) SafeBlob(color: theme.colorScheme.primary),
           Positioned(
             left: 100,
             child: LevitatingMockup(
@@ -273,15 +346,7 @@ class _WelcomePageState extends State<WelcomePage> {
       child: Stack(
         alignment: Alignment.center,
         children: [
-          if (mounted)
-            Blob.animatedRandom(
-              styles: BlobStyles(color: theme.colorScheme.primary),
-              loop: true,
-              size: 300,
-              edgesCount: 5,
-              minGrowth: 4,
-              duration: const Duration(milliseconds: 5000),
-            ),
+          if (mounted) SafeBlob(color: theme.colorScheme.primary),
           Positioned(
             left: 20,
             child: LevitatingMockup(
@@ -308,6 +373,8 @@ class _WelcomePageState extends State<WelcomePage> {
     );
   }
 
+  double extraSpace = (16+16+9);
+
   Widget _buildPlatformFeatures(bool isMobile, bool isTablet, ThemeData theme) {
     final theme = Theme.of(context);
     final width = MediaQuery.of(context).size.width;
@@ -319,26 +386,16 @@ class _WelcomePageState extends State<WelcomePage> {
       child: Column(
         children: [
           // Заголовок с анимацией
-          ShaderMask(
-            blendMode: BlendMode.srcIn,
-            shaderCallback:
-                (bounds) => LinearGradient(
-                  colors: [
-                    theme.colorScheme.primary,
-                    theme.colorScheme.primary,
-                  ],
-                  stops: [0.3, 0.7],
-                ).createShader(bounds),
-            child: Text(
-              'Безліч корисної інформації для підготовки до іспиту та впевненого водіння',
-              style: theme.textTheme.displaySmall?.copyWith(
-                fontSize: isMobile ? 32 : 42,
-                fontWeight: FontWeight.w800,
-                height: 1.2,
-              ),
-              textAlign: TextAlign.center,
+          Text(
+            'Безліч корисної інформації для підготовки до іспиту та впевненого водіння',
+            style: theme.textTheme.displaySmall?.copyWith(
+              fontSize: isMobile ? 32 : 42,
+              fontWeight: FontWeight.w800,
+              height: 1.2,
+              color: theme.primaryColor,
             ),
-          ).animate().fadeIn(duration: 500.ms).slideY(begin: 0.2, end: 0),
+            textAlign: TextAlign.center,
+          ),
 
           const SizedBox(height: 16),
 
@@ -349,7 +406,7 @@ class _WelcomePageState extends State<WelcomePage> {
             children: [
               Expanded(
                 child: Text(
-                  'Офіційні білети 2024 року з поясненнями. Інтерактивні матеріали та '
+                  'Офіційні білети 2025 року з поясненнями. Інтерактивні матеріали та '
                   'персональні рекомендації для ефективної підготовки до іспиту в ТСЦ.',
                   style: theme.textTheme.bodyLarge?.copyWith(
                     color: theme.colorScheme.onSurface.withOpacity(0.8),
@@ -363,87 +420,32 @@ class _WelcomePageState extends State<WelcomePage> {
 
           const SizedBox(height: 40),
 
-          // Основная сетка фич
           GridView.count(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
-            crossAxisCount: isMobile ? 1 : (isTablet ? 2 : 3),
             mainAxisSpacing: 24,
             crossAxisSpacing: 24,
-            childAspectRatio:
-                isMobile
-                    ? 3.5 * (width / 1000)
-                    : (isTablet ? 3 * (width / 2000) : 2 * (width / 2000)),
-            children: [
-              // 1. Официальные билеты
-              _buildFeatureCard(
-                context,
-                icon: Icons.verified,
-                iconColor: Colors.green,
-                title: "Офіційні білети ТСЦ",
-                description:
-                    "Актуальні питання 2024 року з офіційною нумерацією",
-                progress: 1,
-                theme: theme,
-              ),
-
-              // 2. Дорожные знаки
-              _buildFeatureCard(
-                context,
-                icon: Icons.traffic,
-                iconColor: Colors.orange,
-                title: "Дорожні знаки України",
-                description: "Інтерактивний довідник з поясненнями",
-                progress: 1,
-                theme: theme,
-              ),
-
-              // 3. Симулятор экзамена
-              _buildFeatureCard(
-                context,
-                icon: Icons.quiz,
-                iconColor: Colors.blue,
-                title: "Симулятор іспиту",
-                description: "Реальні умови тестування в ТСЦ",
-                progress: 1,
-                theme: theme,
-                isNew: true,
-              ),
-
-              // 4. Разбор ошибок
-              _buildFeatureCard(
-                context,
-                icon: Icons.analytics,
-                iconColor: Colors.purple,
-                title: "Аналіз помилок",
-                description: "Персональні рекомендації",
-                progress: 1,
-                theme: theme,
-              ),
-
-              // 5. Законодательство
-              _buildFeatureCard(
-                context,
-                icon: Icons.gavel,
-                iconColor: Colors.red,
-                title: "Регулювальник",
-                description: "Хто такий регулювальник",
-                progress: 1,
-                theme: theme,
-              ),
-
-              // 6. Видеоуроки
-              _buildFeatureCard(
-                context,
-                icon: Icons.question_answer,
-                iconColor: Colors.teal,
-                title: "Пояснення",
-                description: "Розбір складних моментів",
-                progress: 1,
-                theme: theme,
-                isUpdated: true,
-              ),
-            ],
+            crossAxisCount: isMobile ? 1 : (isTablet ? 2 : 3),
+            childAspectRatio: ((MediaQuery.of(context).size.width - extraSpace) / (isMobile ? .75 : (isTablet ? 2 : 3))) / 241,
+            children: List.generate(6, (index) {
+              return LayoutBuilder(
+                builder: (context, constraints) {
+                  return SizedBox(
+                    height: _calculateCardHeight(context, isMobile, isTablet),
+                    // Общая высота для всех
+                    child: _buildFeatureCard(
+                      context,
+                      icon: _getIconForIndex(index),
+                      iconColor: _getColorForIndex(index),
+                      title: _getTitleForIndex(index),
+                      description: _getDescriptionForIndex(index),
+                      progress: 1,
+                      theme: theme,
+                    ),
+                  );
+                },
+              );
+            }),
           ),
 
           // Дополнительная статистика
@@ -489,7 +491,62 @@ class _WelcomePageState extends State<WelcomePage> {
     );
   }
 
-  // Вспомогательный метод для создания карточек фич
+  // Функция для определения высоты
+  double _calculateCardHeight(
+    BuildContext context,
+    bool isMobile,
+    bool isTablet,
+  ) {
+    if (isMobile) return 220;
+    if (isTablet) return 240;
+    return 200; // Для десктопов
+  }
+
+  // Вспомогательные функции для демонстрации
+  IconData _getIconForIndex(int index) {
+    return [
+      Icons.verified,
+      Icons.traffic,
+      Icons.quiz,
+      Icons.analytics,
+      Icons.gavel,
+      Icons.question_answer,
+    ][index];
+  }
+
+  Color _getColorForIndex(int index) {
+    return [
+      Colors.green,
+      Colors.orange,
+      Colors.blue,
+      Colors.purple,
+      Colors.red,
+      Colors.teal,
+    ][index];
+  }
+
+  String _getTitleForIndex(int index) {
+    return [
+      "Офіційні білети ТСЦ",
+      "Дорожні знаки України",
+      "Симулятор іспиту",
+      "Аналіз помилок",
+      "Регулювальник",
+      "Пояснення",
+    ][index];
+  }
+
+  String _getDescriptionForIndex(int index) {
+    return [
+      "Актуальні питання 2025 року з офіційною нумерацією",
+      "Інтерактивний довідник з поясненнями",
+      "Реальні умови тестування в ТСЦ",
+      "Персональні рекомендації",
+      "Хто такий регулювальник",
+      "Розбір складних моментів",
+    ][index];
+  }
+
   Widget _buildFeatureCard(
     BuildContext context, {
     required IconData icon,
@@ -501,92 +558,89 @@ class _WelcomePageState extends State<WelcomePage> {
     bool isNew = false,
     bool isUpdated = false,
   }) {
-    return MouseRegion(
-      cursor: SystemMouseCursors.click,
-      child: Card(
-        elevation: 0,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-          side: BorderSide(
-            color: theme.colorScheme.outline.withOpacity(0.1),
-            width: 1,
-          ),
+    return Card(
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20),
+        side: BorderSide(
+          color: theme.colorScheme.outline.withOpacity(0.1),
+          width: 1,
         ),
-        child: InkWell(
-          borderRadius: BorderRadius.circular(20),
-          onTap: () {},
-          child: Padding(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: iconColor.withOpacity(0.2),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Icon(icon, color: iconColor, size: 28),
+      ),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(20),
+        onTap: () {},
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Заголовок с иконкой
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: iconColor.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(12),
                     ),
-                    if (isNew)
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 4,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.green.withOpacity(0.2),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Text(
-                          "НОВЕ",
-                          style: theme.textTheme.labelSmall?.copyWith(
-                            color: Colors.green,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                    if (isUpdated)
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 4,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.blue.withOpacity(0.2),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Text(
-                          "ОНОВЛЕНО",
-                          style: theme.textTheme.labelSmall?.copyWith(
-                            color: Colors.blue,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  title,
-                  style: theme.textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.w700,
-                    color: theme.colorScheme.onSurface,
+                    child: Icon(icon, color: iconColor, size: 28),
                   ),
-                ),
-                const SizedBox(height: 8),
-                Text(
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      title,
+                      style: theme.textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
+
+              // Описание
+              Padding(
+                padding: const EdgeInsets.only(top: 12),
+                child: Text(
                   description,
                   style: theme.textTheme.bodyMedium?.copyWith(
                     color: theme.colorScheme.onSurface.withOpacity(0.7),
-                    height: 1.4,
+                  ),
+                  maxLines: 3,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+
+              // Гибкое пространство
+              const Spacer(),
+
+              // Бейдж (если есть)
+              if (isNew || isUpdated)
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: (isNew ? Colors.green : Colors.blue).withOpacity(
+                        0.2,
+                      ),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      isNew ? "НОВЕ" : "ОНОВЛЕНО",
+                      style: theme.textTheme.labelSmall?.copyWith(
+                        color: isNew ? Colors.green : Colors.blue,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                   ),
                 ),
-              ],
-            ),
+            ],
           ),
         ),
       ),
@@ -624,7 +678,7 @@ class _WelcomePageState extends State<WelcomePage> {
       width: double.infinity,
       child: Stack(
         children: [
-          // Фоновое изображение на весь экран
+          // Фонове зображення
           Positioned.fill(
             child: ColorFiltered(
               colorFilter: ColorFilter.mode(
@@ -639,20 +693,20 @@ class _WelcomePageState extends State<WelcomePage> {
             ),
           ),
 
-          // Контент поверх изображения
+          // Контент
           Positioned.fill(
             child: Container(
               padding: EdgeInsets.symmetric(
-                horizontal: isMobile ? 50 : 100,
-                vertical: 50,
+                horizontal: isMobile ? 50 : 50,
+                vertical: isMobile ? 20 : 50,
               ),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Заголовок с эффектом
+                  // Заголовок
                   Text(
-                    'Персональний\nтренер ПДР',
+                    'Готуйся до ПДР\nлегко та зручно',
                     style: TextStyle(
                       fontSize: isMobile ? 36 : 64,
                       fontWeight: FontWeight.w800,
@@ -663,9 +717,9 @@ class _WelcomePageState extends State<WelcomePage> {
 
                   const SizedBox(height: 24),
 
-                  // Подзаголовок
+                  // Підзаголовок
                   Text(
-                    'Адаптивна система, що навчається разом з вами',
+                    'Безкоштовний сервіс для швидкої та ефективної підготовки',
                     style: TextStyle(
                       fontSize: isMobile ? 18 : 24,
                       fontWeight: FontWeight.w500,
@@ -675,40 +729,43 @@ class _WelcomePageState extends State<WelcomePage> {
 
                   const SizedBox(height: 40),
 
-                  // Список преимуществ
+                  // Список переваг
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       _buildFeaturePoint(
-                        'Аналізує ваші помилки',
-                        Icons.analytics,
+                        'Навчайся онлайн у будь-який час',
+                        Icons.laptop_mac,
                       ),
                       _buildFeaturePoint(
-                        'Підбирає індивідуальні завдання',
-                        Icons.person_search,
+                        'Повністю безкоштовно',
+                        Icons.lock_open,
+                      ),
+                      // _buildFeaturePoint(
+                      //   'Темами, а не просто тестами',
+                      //   Icons.topic,
+                      // ),
+                      // _buildFeaturePoint(
+                      //   'Зручний інтерфейс навіть з телефону',
+                      //   Icons.smartphone,
+                      // ),
+                      _buildFeaturePoint(
+                        'Статистика помилок і прогресу',
+                        Icons.bar_chart,
                       ),
                       _buildFeaturePoint(
-                        'Фокусує на слабких місцях',
-                        Icons.auto_fix_high,
-                      ),
-                      _buildFeaturePoint(
-                        'Показує прогрес у реальному часі',
-                        Icons.timeline,
+                        'Пояснення до кожного питання',
+                        Icons.question_answer,
                       ),
                     ],
                   ),
 
                   const SizedBox(height: 40),
 
-                  // Кнопка CTA
+                  // Кнопка
                   FilledButton(
                     onPressed: () {
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const AuthScreen(),
-                        ),
-                      );
+                      navigateToAuth();
                     },
                     style: FilledButton.styleFrom(
                       backgroundColor: theme.colorScheme.primary,
@@ -722,7 +779,7 @@ class _WelcomePageState extends State<WelcomePage> {
                       ),
                     ),
                     child: Text(
-                      'Спробувати безкоштовно',
+                      'Зареєструватися',
                       style: TextStyle(
                         fontSize: isMobile ? 16 : 18,
                         fontWeight: FontWeight.w600,
@@ -734,13 +791,13 @@ class _WelcomePageState extends State<WelcomePage> {
             ),
           ),
 
-          // Декоративные элементы
+          // Декор
           if (!isMobile) ...[
             Positioned(
               right: 100,
               top: 100,
               child: Icon(
-                Icons.auto_awesome,
+                Icons.lightbulb,
                 size: 80,
                 color: Colors.white.withOpacity(0.2),
               ),
@@ -781,7 +838,7 @@ class _WelcomePageState extends State<WelcomePage> {
     );
   }
 
-  Widget _buildTestingModes(bool isMobile, ThemeData theme) {
+  Widget _buildTestingModes(bool isMobile, bool isTablet, ThemeData theme) {
     final theme = Theme.of(context);
     final width = MediaQuery.of(context).size.width;
     return Container(
@@ -840,11 +897,15 @@ class _WelcomePageState extends State<WelcomePage> {
           GridView.count(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
-            crossAxisCount: isMobile ? 1 : (!isMobile ? 2 : 3),
             mainAxisSpacing: 24,
             crossAxisSpacing: 24,
+            crossAxisCount: isMobile ? 1 : (isTablet ? 2 : 3),
             childAspectRatio:
-                isMobile ? 3 * (width / 1000) : 1.6 * (width / 1000),
+                isMobile
+                    ? 3 * (width / 1000)
+                    : isTablet
+                    ? 1.5 * (width / 1000)
+                    : 1 * (width / 1000),
             padding: const EdgeInsets.all(8),
             children: [
               _buildTestModeCard(
@@ -1041,13 +1102,16 @@ class _WelcomePageState extends State<WelcomePage> {
                     ],
                   ),
                   const SizedBox(height: 8),
-                  Align(
-                    alignment: Alignment.centerRight,
-                    child: Text(
-                      "Почати →",
-                      style: theme.textTheme.labelLarge?.copyWith(
-                        color: color,
-                        fontWeight: FontWeight.bold,
+                  TextButton(
+                    onPressed: (){navigateToAuth();},
+                    child: Align(
+                      alignment: Alignment.centerRight,
+                      child: Text(
+                        "Почати →",
+                        style: theme.textTheme.labelLarge?.copyWith(
+                          color: color,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ),
                   ),
@@ -1058,6 +1122,42 @@ class _WelcomePageState extends State<WelcomePage> {
         ),
       ),
     );
+  }
+
+  bool isUnsafeBrowser(String ua) {
+    final knownAgents = [
+      'musical_ly', // старое имя TikTok
+      'bytedancewebview', // TikTok WebView
+      'tiktok', // на всякий случай
+      'instagram',
+      'fbav', // Facebook app
+      'wv', // generic WebView
+      'okhttp', // Android WebView
+    ];
+
+    return knownAgents.any((agent) => ua.contains(agent));
+  }
+
+  void navigateToAuth() {
+    final ua = html.window.navigator.userAgent.toLowerCase();
+    if (isUnsafeBrowser(ua)) {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => const BrowserRequiredPage()),
+      );
+    } else {
+      if (isProduction) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const AuthPage()),
+        );
+      } else {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const HomePage()),
+        );
+      }
+    }
   }
 
   // Вспомогательный метод для мета-информации
@@ -1359,20 +1459,21 @@ class _WelcomePageState extends State<WelcomePage> {
             children: [
               IconButton(
                 icon: const Icon(Icons.tiktok),
-                onPressed: () {},
-                color: theme.colorScheme.onSurface.withOpacity(0.8),
-              ),
-              const SizedBox(width: 16),
-              IconButton(
-                icon: const Icon(Icons.facebook),
-                onPressed: () {},
+                onPressed: () async {
+                  final Uri _url = Uri.parse(
+                    'https://www.tiktok.com/@uaimpulsepdr',
+                  );
+                  if (!await launchUrl(_url)) {
+                    throw Exception('Could not launch $_url');
+                  }
+                },
                 color: theme.colorScheme.onSurface.withOpacity(0.8),
               ),
             ],
           ),
           const SizedBox(height: 24),
           Text(
-            'Неофіційний навчальний ресурс. Тести відповідають актуальним білетам МВС.',
+            'Тести відповідають актуальним білетам МВС.',
             style: theme.textTheme.bodySmall?.copyWith(
               color: theme.colorScheme.onSurface.withOpacity(0.6),
             ),
@@ -1481,6 +1582,29 @@ class ModeButton extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+class SafeBlob extends StatefulWidget {
+  final Color color;
+
+  const SafeBlob({super.key, required this.color});
+
+  @override
+  State<SafeBlob> createState() => _SafeBlobState();
+}
+
+class _SafeBlobState extends State<SafeBlob> {
+  @override
+  Widget build(BuildContext context) {
+    return Blob.animatedRandom(
+      styles: BlobStyles(color: widget.color),
+      loop: true,
+      size: 450,
+      edgesCount: 5,
+      minGrowth: 4,
+      duration: const Duration(milliseconds: 5000),
     );
   }
 }
